@@ -1,0 +1,17 @@
+# Backend
+scrapay-backend/.venv/
+scrapay-backend/.env
+scrapay-backend/db.sqlite3
+scrapay-backend/**/__pycache__/
+scrapay-backend/**/*.pyc
+
+# Frontend
+scrapay-frontend/node_modules/
+scrapay-frontend/dist/
+scrapay-frontend/.env
+scrapay-frontend/.env.*
+
+# OS / Editor
+.DS_Store
+Thumbs.db
+*.log

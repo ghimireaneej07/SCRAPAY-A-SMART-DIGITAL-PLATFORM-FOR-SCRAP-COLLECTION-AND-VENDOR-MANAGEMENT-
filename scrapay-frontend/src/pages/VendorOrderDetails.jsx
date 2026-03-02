@@ -1,0 +1,87 @@
+import { FaCalendarAlt, FaClock, FaMapMarkerAlt, FaUser } from 'react-icons/fa';
+import { useNavigate } from 'react-router-dom';
+import { useAppFlow } from '../hooks/useAppFlow.js';
+import { orderService } from '../services/orderService.js';
+
+const VendorOrderDetails = () => {
+  const navigate = useNavigate();
+  const { selectedOrder } = useAppFlow();
+
+  if (!selectedOrder) {
+    return (
+      <section className="mx-auto flex min-h-[60vh] max-w-xl flex-col items-center justify-center px-4 text-center text-white">
+        <h1 className="text-2xl font-bold text-orange-300">No order selected</h1>
+        <button
+          className="mt-5 rounded-md bg-orange-500 px-5 py-2 font-semibold hover:bg-orange-600"
+          onClick={() => navigate('/vendor/dashboard')}
+          type="button"
+        >
+          Back to dashboard
+        </button>
+      </section>
+    );
+  }
+
+  const handleAction = async (action) => {
+    try {
+      await orderService.vendorAction(selectedOrder.id, action);
+      navigate('/vendor/dashboard');
+    } catch {
+      navigate('/vendor/dashboard');
+    }
+  };
+
+  const pickupDate = new Date(selectedOrder.pickup_datetime);
+
+  return (
+    <section className="min-h-screen bg-[#8B5E3C] px-6 py-6 font-serif text-white">
+      <div className="mb-8 rounded-xl bg-[#A1623C] p-6 shadow-lg">
+        <div className="grid grid-cols-1 items-center gap-4 text-sm md:grid-cols-3">
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center gap-2 text-lg font-bold">
+              <FaUser /> {selectedOrder.customer_name}
+            </div>
+            <div className="w-max rounded bg-white px-3 py-1 text-sm font-medium text-[#8B5E3C]">
+              {selectedOrder.items.map((item) => item.category_name).join(', ')}
+            </div>
+          </div>
+          <div className="flex items-start gap-2 text-sm">
+            <FaMapMarkerAlt className="mt-1" />
+            <p className="leading-snug">{selectedOrder.address}</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex flex-col items-center gap-6 rounded-xl bg-[#C2976C] p-6 shadow-lg">
+        <div className="flex items-center gap-2 rounded-full bg-yellow-100 px-6 py-2 font-medium text-black">
+          <FaCalendarAlt />
+          <span>{pickupDate.toLocaleDateString()}</span>
+        </div>
+
+        <div className="flex items-center gap-2 rounded-full bg-yellow-100 px-6 py-2 font-medium text-black">
+          <FaClock />
+          <span>{pickupDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+        </div>
+
+        <div className="mt-6 flex gap-6">
+          <button
+            className="rounded-full bg-green-500 px-6 py-2 font-bold text-white shadow-md transition-all hover:bg-green-600"
+            onClick={() => handleAction('accept')}
+            type="button"
+          >
+            Accept
+          </button>
+          <button
+            className="rounded-full bg-red-500 px-6 py-2 font-bold text-white shadow-md transition-all hover:bg-red-600"
+            onClick={() => handleAction('reject')}
+            type="button"
+          >
+            Reject
+          </button>
+        </div>
+      </div>
+    </section>
+  );
+};
+
+export default VendorOrderDetails;

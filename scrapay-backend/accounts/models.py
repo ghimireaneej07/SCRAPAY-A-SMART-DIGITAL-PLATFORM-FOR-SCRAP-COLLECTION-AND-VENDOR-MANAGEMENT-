@@ -1,0 +1,42 @@
+from django.contrib.auth.models import AbstractUser
+from django.db import models
+
+
+class UserRole(models.TextChoices):
+    USER = "user", "User"
+    VENDOR = "vendor", "Vendor"
+    ADMIN = "admin", "Admin"
+
+
+class User(AbstractUser):
+    email = models.EmailField(unique=True)
+    phone = models.CharField(max_length=20, blank=True)
+    role = models.CharField(max_length=20, choices=UserRole.choices, default=UserRole.USER)
+
+
+class UserProfile(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="profile")
+    full_name = models.CharField(max_length=255)
+    address = models.TextField(blank=True)
+    city = models.CharField(max_length=100, blank=True)
+    state = models.CharField(max_length=100, blank=True)
+    pincode = models.CharField(max_length=12, blank=True)
+    latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+
+    def __str__(self):
+        return f"{self.full_name} ({self.user.username})"
+
+
+class VendorProfile(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="vendor_profile")
+    business_name = models.CharField(max_length=255)
+    service_radius_km = models.DecimalField(max_digits=6, decimal_places=2, default=10)
+    rating_avg = models.DecimalField(max_digits=3, decimal_places=2, default=0)
+    rating_count = models.PositiveIntegerField(default=0)
+    is_verified = models.BooleanField(default=False)
+
+    def __str__(self):
+        return self.business_name
+
+# Create your models here.
