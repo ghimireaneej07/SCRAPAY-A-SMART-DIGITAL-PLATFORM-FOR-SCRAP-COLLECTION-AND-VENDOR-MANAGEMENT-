@@ -1,8 +1,10 @@
 from decimal import Decimal
 
+from django.utils import timezone
 from rest_framework import serializers
 
 from catalog.models import MarketRate
+from accounts.models import User, UserRole
 
 from .models import Order, OrderItem, OrderStatus, OrderStatusHistory
 
@@ -24,6 +26,23 @@ class OrderCreateSerializer(serializers.ModelSerializer):
     def validate_items(self, value):
         if not value:
             raise serializers.ValidationError("At least one order item is required.")
+        for item in value:
+            if item["quantity_kg"] <= 0:
+                raise serializers.ValidationError("Quantity must be greater than zero for all items.")
+        return value
+
+    def validate_vendor(self, value):
+        if not value:
+            return value
+        if value.role != UserRole.VENDOR:
+            raise serializers.ValidationError("Selected vendor is invalid.")
+        if not value.is_active:
+            raise serializers.ValidationError("Selected vendor is not active.")
+        return value
+
+    def validate_pickup_datetime(self, value):
+        if value <= timezone.now():
+            raise serializers.ValidationError("Pickup date and time must be in the future.")
         return value
 
     def create(self, validated_data):
@@ -85,4 +104,27 @@ class OrderReadSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
             "items",
+        )
+
+
+class VendorDirectorySerializer(serializers.ModelSerializer):
+    business_name = serializers.CharField(source="vendor_profile.business_name", default="")
+    rating_avg = serializers.DecimalField(
+        source="vendor_profile.rating_avg", max_digits=3, decimal_places=2, default=Decimal("0.00")
+    )
+    service_radius_km = serializers.DecimalField(
+        source="vendor_profile.service_radius_km", max_digits=6, decimal_places=2, default=Decimal("0.00")
+    )
+    is_verified = serializers.BooleanField(source="vendor_profile.is_verified", default=False)
+
+    class Meta:
+        model = User
+        fields = (
+            "id",
+            "username",
+            "email",
+            "business_name",
+            "rating_avg",
+            "service_radius_km",
+            "is_verified",
         )

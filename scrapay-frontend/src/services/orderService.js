@@ -1,6 +1,14 @@
 import { apiRequest } from './apiClient.js';
 
 export const orderService = {
+  getMyOrders() {
+    return apiRequest('/orders/my/');
+  },
+
+  getMyOrderById(orderId) {
+    return apiRequest(`/orders/my/${orderId}/`);
+  },
+
   getVendors() {
     return apiRequest('/orders/vendors/');
   },
@@ -15,6 +23,10 @@ export const orderService = {
   getVendorOrders(status) {
     const query = status ? `?status=${encodeURIComponent(status)}` : '';
     return apiRequest(`/orders/vendor/${query}`);
+  },
+
+  getVendorOrderById(orderId) {
+    return apiRequest(`/orders/vendor/${orderId}/`);
   },
 
   vendorAction(orderId, action) {

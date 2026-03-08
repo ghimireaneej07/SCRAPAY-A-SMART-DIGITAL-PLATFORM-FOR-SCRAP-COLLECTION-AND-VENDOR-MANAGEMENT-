@@ -6,7 +6,7 @@ const ProtectedRoute = ({ allowedRoles = [] }) => {
   const { isAuthenticated, hasRole, isBootstrapping } = useAuth();
 
   if (isBootstrapping) {
-    return null;
+    return <div className="p-6 text-center text-sm text-orange-200">Checking session...</div>;
   }
 
   if (!isAuthenticated) {

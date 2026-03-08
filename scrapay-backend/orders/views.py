@@ -8,11 +8,12 @@ from accounts.permissions import IsUserRole, IsVendorRole
 from notifications.services import send_user_event, send_vendor_event
 
 from .models import Order, OrderStatus, OrderStatusHistory
-from .serializers import OrderCreateSerializer, OrderReadSerializer
+from .serializers import OrderCreateSerializer, OrderReadSerializer, VendorDirectorySerializer
 
 
 class UserOrderViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated, IsUserRole]
+    http_method_names = ["get", "post", "head", "options"]
 
     def get_queryset(self):
         return (
@@ -46,6 +47,12 @@ class UserOrderViewSet(viewsets.ModelViewSet):
 class VendorOrderViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = OrderReadSerializer
     permission_classes = [IsAuthenticated, IsVendorRole]
+    http_method_names = ["get", "patch", "head", "options"]
+
+    STATUS_TRANSITIONS = {
+        OrderStatus.PENDING: {OrderStatus.ACCEPTED, OrderStatus.REJECTED},
+        OrderStatus.ACCEPTED: {OrderStatus.COMPLETED},
+    }
 
     def get_queryset(self):
         queryset = (
@@ -76,6 +83,13 @@ class VendorOrderViewSet(viewsets.ReadOnlyModelViewSet):
             return Response({"detail": "Order not found."}, status=status.HTTP_404_NOT_FOUND)
 
         from_status = order.status
+        allowed_statuses = self.STATUS_TRANSITIONS.get(from_status, set())
+        if to_status not in allowed_statuses:
+            return Response(
+                {"detail": f"Invalid status transition from '{from_status}' to '{to_status}'."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         order.status = to_status
         order.save(update_fields=["status", "updated_at"])
         OrderStatusHistory.objects.create(
@@ -95,27 +109,13 @@ class VendorOrderViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 class VendorDirectoryViewSet(viewsets.ReadOnlyModelViewSet):
-    serializer_class = None
+    serializer_class = VendorDirectorySerializer
     permission_classes = [IsAuthenticated, IsUserRole]
+    http_method_names = ["get", "head", "options"]
 
-    def list(self, request, *args, **kwargs):
+    def get_queryset(self):
         from accounts.models import User
 
-        vendors = User.objects.filter(role=UserRole.VENDOR, is_active=True).select_related("vendor_profile")
-        payload = []
-        for vendor in vendors:
-            profile = getattr(vendor, "vendor_profile", None)
-            payload.append(
-                {
-                    "id": vendor.id,
-                    "username": vendor.username,
-                    "email": vendor.email,
-                    "business_name": profile.business_name if profile else "",
-                    "rating_avg": str(profile.rating_avg) if profile else "0.00",
-                    "service_radius_km": str(profile.service_radius_km) if profile else "0.00",
-                    "is_verified": profile.is_verified if profile else False,
-                }
-            )
-        return Response(payload, status=status.HTTP_200_OK)
+        return User.objects.filter(role=UserRole.VENDOR, is_active=True).select_related("vendor_profile")
 
 # Create your views here.

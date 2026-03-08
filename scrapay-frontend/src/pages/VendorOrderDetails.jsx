@@ -1,16 +1,41 @@
 import { FaCalendarAlt, FaClock, FaMapMarkerAlt, FaUser } from 'react-icons/fa';
-import { useNavigate } from 'react-router-dom';
-import { useAppFlow } from '../hooks/useAppFlow.js';
+import { useEffect, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { orderService } from '../services/orderService.js';
 
 const VendorOrderDetails = () => {
   const navigate = useNavigate();
-  const { selectedOrder } = useAppFlow();
+  const { id } = useParams();
+  const [selectedOrder, setSelectedOrder] = useState(null);
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(true);
 
-  if (!selectedOrder) {
+  useEffect(() => {
+    const loadOrder = async () => {
+      try {
+        const data = await orderService.getVendorOrderById(id);
+        setSelectedOrder(data);
+      } catch (err) {
+        setError(err.message || 'Unable to load order.');
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadOrder();
+  }, [id]);
+
+  if (loading) {
     return (
       <section className="mx-auto flex min-h-[60vh] max-w-xl flex-col items-center justify-center px-4 text-center text-white">
-        <h1 className="text-2xl font-bold text-orange-300">No order selected</h1>
+        <p className="text-orange-100">Loading order...</p>
+      </section>
+    );
+  }
+
+  if (error || !selectedOrder) {
+    return (
+      <section className="mx-auto flex min-h-[60vh] max-w-xl flex-col items-center justify-center px-4 text-center text-white">
+        <h1 className="text-2xl font-bold text-orange-300">{error || 'Order not found'}</h1>
         <button
           className="mt-5 rounded-md bg-orange-500 px-5 py-2 font-semibold hover:bg-orange-600"
           onClick={() => navigate('/vendor/dashboard')}
@@ -27,7 +52,7 @@ const VendorOrderDetails = () => {
       await orderService.vendorAction(selectedOrder.id, action);
       navigate('/vendor/dashboard');
     } catch {
-      navigate('/vendor/dashboard');
+      setError('Unable to update order status.');
     }
   };
 

@@ -1,12 +1,30 @@
-# React + Vite
+# Scrapay Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+## Stack
+- React + Vite
+- Tailwind CSS
+- React Router
+- Framer Motion
 
-Currently, two official plugins are available:
+## Setup
+```powershell
+cd scrapay-frontend
+npm install
+```
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+Create `.env`:
+```env
+VITE_API_BASE_URL=http://localhost:8000/api
+```
 
-## Expanding the ESLint configuration
+Run:
+```powershell
+npm run dev
+```
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## Implemented flows
+- JWT login/register with role-based routing
+- User: category selection -> vendor selection -> order creation -> order details
+- Vendor: pending orders -> order detail -> accept/reject/complete
+- Admin: vendor verification + market rate creation
+- Notifications: list + realtime websocket badge

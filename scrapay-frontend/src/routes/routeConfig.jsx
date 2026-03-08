@@ -29,7 +29,7 @@ export const protectedRoutes = [
   { path: '/sell-scrap', element: <SellScrap />, roles: ['user'] },
   { path: '/order/:id', element: <OrderPage />, roles: ['user'] },
   { path: '/vendor/dashboard', element: <VendorDashboard />, roles: ['vendor'] },
-  { path: '/vendor/order-details', element: <VendorOrderDetails />, roles: ['vendor'] },
+  { path: '/vendor/order-details/:id', element: <VendorOrderDetails />, roles: ['vendor'] },
   { path: '/vendor/completed-orders', element: <CompletedOrders />, roles: ['vendor'] },
   { path: '/admin', element: <AdminPanel />, roles: ['admin'] },
 ];

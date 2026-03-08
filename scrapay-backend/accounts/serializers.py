@@ -14,11 +14,11 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class RegisterUserSerializer(serializers.ModelSerializer):
-    full_name = serializers.CharField()
-    address = serializers.CharField(required=False, allow_blank=True)
-    city = serializers.CharField(required=False, allow_blank=True)
-    state = serializers.CharField(required=False, allow_blank=True)
-    pincode = serializers.CharField(required=False, allow_blank=True)
+    full_name = serializers.CharField(write_only=True)
+    address = serializers.CharField(required=False, allow_blank=True, write_only=True)
+    city = serializers.CharField(required=False, allow_blank=True, write_only=True)
+    state = serializers.CharField(required=False, allow_blank=True, write_only=True)
+    pincode = serializers.CharField(required=False, allow_blank=True, write_only=True)
     password = serializers.CharField(write_only=True, min_length=8)
 
     class Meta:
@@ -52,13 +52,19 @@ class RegisterUserSerializer(serializers.ModelSerializer):
 
 
 class RegisterVendorSerializer(serializers.ModelSerializer):
-    full_name = serializers.CharField()
-    business_name = serializers.CharField()
-    address = serializers.CharField(required=False, allow_blank=True)
-    city = serializers.CharField(required=False, allow_blank=True)
-    state = serializers.CharField(required=False, allow_blank=True)
-    pincode = serializers.CharField(required=False, allow_blank=True)
-    service_radius_km = serializers.DecimalField(max_digits=6, decimal_places=2, required=False, default=10)
+    full_name = serializers.CharField(write_only=True)
+    business_name = serializers.CharField(write_only=True)
+    address = serializers.CharField(required=False, allow_blank=True, write_only=True)
+    city = serializers.CharField(required=False, allow_blank=True, write_only=True)
+    state = serializers.CharField(required=False, allow_blank=True, write_only=True)
+    pincode = serializers.CharField(required=False, allow_blank=True, write_only=True)
+    service_radius_km = serializers.DecimalField(
+        max_digits=6,
+        decimal_places=2,
+        required=False,
+        default=10,
+        write_only=True,
+    )
     password = serializers.CharField(write_only=True, min_length=8)
 
     class Meta:
@@ -104,3 +110,20 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         data = super().validate(attrs)
         data["user"] = UserSerializer(self.user).data
         return data
+
+
+class AdminVendorListSerializer(serializers.ModelSerializer):
+    full_name = serializers.CharField(source="profile.full_name", default="")
+    business_name = serializers.CharField(source="vendor_profile.business_name", default="")
+    is_verified = serializers.BooleanField(source="vendor_profile.is_verified", default=False)
+    rating_avg = serializers.DecimalField(
+        source="vendor_profile.rating_avg", max_digits=3, decimal_places=2, default=0
+    )
+
+    class Meta:
+        model = User
+        fields = ("id", "username", "email", "phone", "is_active", "full_name", "business_name", "is_verified", "rating_avg")
+
+
+class AdminVendorVerifySerializer(serializers.Serializer):
+    is_verified = serializers.BooleanField()

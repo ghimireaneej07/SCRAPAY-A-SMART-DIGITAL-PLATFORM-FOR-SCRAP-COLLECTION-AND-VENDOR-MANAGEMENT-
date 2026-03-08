@@ -4,14 +4,18 @@ import { orderService } from '../services/orderService.js';
 
 const CompletedOrders = () => {
   const [completedOrders, setCompletedOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     const load = async () => {
       try {
         const data = await orderService.getVendorOrders('completed');
         setCompletedOrders(data);
-      } catch {
-        setCompletedOrders([]);
+      } catch (err) {
+        setError(err.message || 'Unable to load completed orders.');
+      } finally {
+        setLoading(false);
       }
     };
     load();
@@ -20,6 +24,8 @@ const CompletedOrders = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#8B5E3C] to-[#3E2C1C] px-6 py-10 font-serif text-white">
       <h2 className="mb-8 text-center text-3xl font-bold text-orange-300">Completed Orders</h2>
+      {loading && <p className="mb-4 text-center text-sm text-orange-100">Loading completed orders...</p>}
+      {error && <p className="mb-4 text-center text-sm text-red-300">{error}</p>}
 
       <div className="mb-3 grid grid-cols-3 px-4 text-lg font-semibold text-orange-100">
         <span>User</span>

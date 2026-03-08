@@ -2,14 +2,13 @@ import { motion } from 'framer-motion';
 import { FaArrowRight } from 'react-icons/fa';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAppFlow } from '../hooks/useAppFlow.js';
 import { orderService } from '../services/orderService.js';
 
 const VendorDashboard = () => {
   const navigate = useNavigate();
-  const { setSelectedOrder } = useAppFlow();
   const [orders, setOrders] = useState([]);
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const loadOrders = async () => {
@@ -18,20 +17,22 @@ const VendorDashboard = () => {
         setOrders(data);
       } catch (err) {
         setError(err.message || 'Unable to load orders.');
+      } finally {
+        setLoading(false);
       }
     };
     loadOrders();
   }, []);
 
   const handleViewOrder = (order) => {
-    setSelectedOrder(order);
-    navigate('/vendor/order-details');
+    navigate(`/vendor/order-details/${order.id}`);
   };
 
   return (
     <section className="min-h-screen bg-gradient-to-br from-[#8B5E3C] to-[#3E2C1C] px-6 py-10 text-white sm:px-10">
       <h1 className="mb-12 text-4xl font-extrabold tracking-wide text-orange-300">Order Requests</h1>
       {error && <p className="mb-4 text-sm text-red-300">{error}</p>}
+      {loading && <p className="mb-4 text-sm text-orange-200">Loading orders...</p>}
 
       <div className="grid gap-8 md:grid-cols-2">
         {orders.map((order, index) => (

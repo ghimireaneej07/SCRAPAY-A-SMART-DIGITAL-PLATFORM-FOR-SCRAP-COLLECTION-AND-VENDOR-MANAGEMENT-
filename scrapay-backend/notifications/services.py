@@ -15,13 +15,19 @@ def _persist_event(user_id, event_type, payload):
 
 def _send_group_event(group_name, payload):
     channel_layer = get_channel_layer()
-    async_to_sync(channel_layer.group_send)(
-        group_name,
-        {
-            "type": "realtime.message",
-            "payload": payload,
-        },
-    )
+    if not channel_layer:
+        return
+    try:
+        async_to_sync(channel_layer.group_send)(
+            group_name,
+            {
+                "type": "realtime.message",
+                "payload": payload,
+            },
+        )
+    except Exception:
+        # Keep API side effects resilient even when channel backend is unavailable.
+        return
 
 
 def send_user_event(user_id, payload):

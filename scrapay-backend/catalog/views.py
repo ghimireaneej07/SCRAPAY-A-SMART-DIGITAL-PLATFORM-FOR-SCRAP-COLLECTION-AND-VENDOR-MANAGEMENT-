@@ -1,8 +1,10 @@
+from rest_framework import viewsets
 from rest_framework.generics import ListAPIView
 from rest_framework.permissions import IsAuthenticated
 
+from accounts.permissions import IsAdminRole
 from .models import MarketRate, ScrapCategory
-from .serializers import MarketRateSerializer, ScrapCategorySerializer
+from .serializers import MarketRateSerializer, MarketRateWriteSerializer, ScrapCategorySerializer
 
 
 class ScrapCategoryListView(ListAPIView):
@@ -29,5 +31,16 @@ class LatestMarketRateListView(ListAPIView):
             if latest:
                 latest_ids.append(latest.id)
         return MarketRate.objects.filter(id__in=latest_ids).select_related("category")
+
+
+class AdminMarketRateViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated, IsAdminRole]
+    queryset = MarketRate.objects.select_related("category").order_by("-effective_from", "-id")
+    http_method_names = ["get", "post", "patch", "head", "options"]
+
+    def get_serializer_class(self):
+        if self.action in {"create", "partial_update"}:
+            return MarketRateWriteSerializer
+        return MarketRateSerializer
 
 # Create your views here.

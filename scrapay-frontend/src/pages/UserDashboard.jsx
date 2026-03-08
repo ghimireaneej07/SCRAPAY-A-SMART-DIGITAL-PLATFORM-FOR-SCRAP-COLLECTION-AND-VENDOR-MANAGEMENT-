@@ -4,64 +4,66 @@ import { useNavigate } from 'react-router-dom';
 import { useAppFlow } from '../hooks/useAppFlow.js';
 import { catalogService } from '../services/catalogService.js';
 
-const scrapItems = [
-  { type: 'Plastic', image: '/assets/plastic.jpeg' },
-  { type: 'Papers', image: '/assets/paper.jpeg' },
-  { type: 'Glass', image: '/assets/glass.jpeg' },
-  { type: 'Metals', image: '/assets/metal.jpg' },
-  { type: 'E-waste', image: '/assets/E-waste.png' },
-];
+const imageMap = {
+  plastic: '/assets/plastic.jpeg',
+  paper: '/assets/paper.jpeg',
+  glass: '/assets/glass.jpeg',
+  metal: '/assets/metal.jpg',
+  ewaste: '/assets/E-waste.png',
+};
+
+const normalize = (value) => value.toLowerCase().replace(/[^a-z]/g, '');
 
 const UserDashboard = () => {
   const [selected, setSelected] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [marketPrices, setMarketPrices] = useState({});
+  const [error, setError] = useState('');
   const navigate = useNavigate();
   const { setSelectedScraps, setSelectedVendor } = useAppFlow();
 
   useEffect(() => {
-    const loadRates = async () => {
+    const loadData = async () => {
       try {
-        const rates = await catalogService.getLatestMarketRates();
+        const [rates, allCategories] = await Promise.all([
+          catalogService.getLatestMarketRates(),
+          catalogService.getCategories(),
+        ]);
         const mapped = {};
         rates.forEach((rate) => {
           mapped[rate.category.name] = Number(rate.price_per_kg);
         });
         setMarketPrices(mapped);
-      } catch {
-        setMarketPrices({
-          Plastic: 15,
-          Papers: 18,
-          Glass: 28,
-          Metals: 20,
-          'E-waste': 25,
-        });
+        setCategories(allCategories);
+      } catch (err) {
+        setError(err.message || 'Unable to load categories and rates.');
       }
     };
-    loadRates();
+    loadData();
   }, []);
 
-  const displayRates = useMemo(() => {
-    if (Object.keys(marketPrices).length > 0) return marketPrices;
-    return {
-      Plastic: 15,
-      Papers: 18,
-      Glass: 28,
-      Metals: 20,
-      'E-waste': 25,
-    };
-  }, [marketPrices]);
+  const displayCategories = useMemo(
+    () =>
+      categories.map((category) => {
+        const key = normalize(category.code || category.name);
+        return {
+          ...category,
+          image: imageMap[key] || '/assets/scrap-hero.png',
+        };
+      }),
+    [categories],
+  );
 
-  const toggleSelection = (type) => {
+  const toggleSelection = (categoryId) => {
     setSelected((prev) =>
-      prev.includes(type) ? prev.filter((item) => item !== type) : [...prev, type],
+      prev.includes(categoryId) ? prev.filter((item) => item !== categoryId) : [...prev, categoryId],
     );
   };
 
   const proceedToVendor = () => {
-    if (selected.length === 0) {
-      return;
-    }
-    setSelectedScraps(selected);
+    if (selected.length === 0) return;
+    const selectedCategoryObjects = displayCategories.filter((category) => selected.includes(category.id));
+    setSelectedScraps(selectedCategoryObjects);
     setSelectedVendor(null);
     navigate('/vendor-selection');
   };
@@ -69,32 +71,33 @@ const UserDashboard = () => {
   return (
     <section className="min-h-screen bg-gradient-to-br from-[#8B5E3C] to-[#3E2C1C] px-4 py-10 text-white sm:px-10">
       <h1 className="mb-8 text-xl font-semibold">Select Your Scrap</h1>
+      {error && <p className="mb-4 text-sm text-red-300">{error}</p>}
 
       <div className="flex flex-col gap-10 lg:flex-row">
         <div className="grid flex-1 grid-cols-2 gap-6 rounded-xl bg-[#A1623C] p-6 sm:grid-cols-3">
-          {scrapItems.map(({ type, image }, index) => (
+          {displayCategories.map(({ id, name, image }, index) => (
             <motion.button
-              key={type}
+              key={id}
               type="button"
-              onClick={() => toggleSelection(type)}
+              onClick={() => toggleSelection(id)}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4, delay: index * 0.06 }}
               className={`relative overflow-hidden rounded-xl transition-all duration-300 ${
-                selected.includes(type)
+                selected.includes(id)
                   ? 'ring-2 ring-green-400 bg-green-200/10'
                   : 'bg-[#4A2F20] hover:bg-[#5a3a26]'
               }`}
-              aria-pressed={selected.includes(type)}
+              aria-pressed={selected.includes(id)}
             >
               <div className="h-32 w-full overflow-hidden rounded-lg bg-white sm:h-36">
                 <img
                   src={image}
-                  alt={type}
+                  alt={name}
                   className="h-full w-full object-cover transition-transform duration-300 hover:scale-105"
                 />
               </div>
-              <p className="mb-2 mt-2 text-center text-lg font-semibold">{type}</p>
+              <p className="mb-2 mt-2 text-center text-lg font-semibold">{name}</p>
             </motion.button>
           ))}
         </div>
@@ -113,7 +116,7 @@ const UserDashboard = () => {
               </tr>
             </thead>
             <tbody>
-              {Object.entries(displayRates).map(([item, price]) => (
+              {Object.entries(marketPrices).map(([item, price]) => (
                 <tr key={item} className="rounded-lg bg-[#4b3221] text-white">
                   <td className="rounded-l-lg px-2 py-2">{item}</td>
                   <td className="px-2 py-2">per/kg</td>

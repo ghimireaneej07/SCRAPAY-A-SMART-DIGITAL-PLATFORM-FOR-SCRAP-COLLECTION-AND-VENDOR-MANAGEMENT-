@@ -3,6 +3,7 @@ import { Menu, Search, X } from 'lucide-react';
 import { useState } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth.js';
+import { useNotifications } from '../hooks/useNotifications.js';
 
 const navLinkClass = ({ isActive }) =>
   `transition hover:text-orange-300 ${isActive ? 'text-orange-300' : 'text-white'}`;
@@ -11,6 +12,7 @@ const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const navigate = useNavigate();
   const { isAuthenticated, logout, user } = useAuth();
+  const { unreadCount, socketConnected } = useNotifications();
 
   const closeMenu = () => setIsOpen(false);
 
@@ -68,6 +70,11 @@ const Navbar = () => {
             </NavLink>
           ))}
           {isAuthenticated && (
+            <span className="rounded-full bg-[#70482f] px-3 py-1 text-xs text-orange-100">
+              Alerts {unreadCount} {socketConnected ? 'Live' : 'Offline'}
+            </span>
+          )}
+          {isAuthenticated && (
             <button
               type="button"
               onClick={handleLogout}
@@ -100,6 +107,11 @@ const Navbar = () => {
                   {link.label}
                 </NavLink>
               ))}
+              {isAuthenticated && (
+                <span className="rounded-full bg-[#70482f] px-3 py-1 text-xs text-orange-100">
+                  Alerts {unreadCount} {socketConnected ? 'Live' : 'Offline'}
+                </span>
+              )}
               {isAuthenticated && (
                 <button
                   type="button"

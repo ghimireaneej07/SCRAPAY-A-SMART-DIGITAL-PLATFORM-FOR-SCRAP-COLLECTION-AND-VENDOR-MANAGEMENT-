@@ -15,3 +15,9 @@ class MarketRateSerializer(serializers.ModelSerializer):
     class Meta:
         model = MarketRate
         fields = ("id", "category", "price_per_kg", "effective_from")
+
+
+class MarketRateWriteSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = MarketRate
+        fields = ("id", "category", "price_per_kg", "effective_from", "is_active")

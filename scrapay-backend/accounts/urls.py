@@ -1,6 +1,14 @@
 from django.urls import path
 
-from .views import LoginView, MeView, RefreshView, RegisterUserView, RegisterVendorView
+from .views import (
+    AdminVendorListView,
+    AdminVendorVerifyView,
+    LoginView,
+    MeView,
+    RefreshView,
+    RegisterUserView,
+    RegisterVendorView,
+)
 
 urlpatterns = [
     path("register/user", RegisterUserView.as_view(), name="register-user"),
@@ -8,4 +16,6 @@ urlpatterns = [
     path("login", LoginView.as_view(), name="login"),
     path("refresh", RefreshView.as_view(), name="refresh"),
     path("me", MeView.as_view(), name="me"),
+    path("admin/vendors", AdminVendorListView.as_view(), name="admin-vendors"),
+    path("admin/vendors/<int:vendor_id>/verify", AdminVendorVerifyView.as_view(), name="admin-vendor-verify"),
 ]

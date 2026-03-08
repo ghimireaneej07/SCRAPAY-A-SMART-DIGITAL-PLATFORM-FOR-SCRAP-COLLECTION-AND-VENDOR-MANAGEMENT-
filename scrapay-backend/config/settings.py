@@ -59,6 +59,8 @@ TEMPLATES = [
                 "django.contrib.messages.context_processors.messages",
             ],
         },
+
+        
     },
 ]
 
@@ -70,10 +72,10 @@ DB_ENGINE = os.getenv("DB_ENGINE", "sqlite").lower()
 if DB_ENGINE == "mysql":
     DATABASES = {
         "default": {
-            "ENGINE": "django.db.backends.mysql",
-            "NAME": os.getenv("DB_NAME", "scrapay"),
+            "ENGINE": "django.db.baME", "scrapay"),
             "USER": os.getenv("DB_USER", "root"),
-            "PASSWORD": os.getenv("DB_PASSWORD", ""),
+            "PASSWORD": os.getenv("DB_PASckends.mysql",
+            "NAME": os.getenv("DB_NASWORD", ""),
             "HOST": os.getenv("DB_HOST", "127.0.0.1"),
             "PORT": os.getenv("DB_PORT", "3306"),
             "OPTIONS": {"charset": "utf8mb4"},
@@ -83,19 +85,23 @@ else:
     DATABASES = {"default": {"ENGINE": "django.db.backends.sqlite3", "NAME": BASE_DIR / "db.sqlite3"}}
 
 
-CHANNEL_LAYERS = {
-    "default": {
-        "BACKEND": "channels_redis.core.RedisChannelLayer",
-        "CONFIG": {
-            "hosts": [
-                (
-                    os.getenv("REDIS_HOST", "127.0.0.1"),
-                    int(os.getenv("REDIS_PORT", "6379")),
-                )
-            ]
-        },
+CHANNEL_LAYER_BACKEND = os.getenv("CHANNEL_LAYER_BACKEND", "redis").lower()
+if CHANNEL_LAYER_BACKEND == "inmemory":
+    CHANNEL_LAYERS = {"default": {"BACKEND": "channels.layers.InMemoryChannelLayer"}}
+else:
+    CHANNEL_LAYERS = {
+        "default": {
+            "BACKEND": "channels_redis.core.RedisChannelLayer",
+            "CONFIG": {
+                "hosts": [
+                    (
+                        os.getenv("REDIS_HOST", "127.0.0.1"),
+                        int(os.getenv("REDIS_PORT", "6379")),
+                    )
+                ]
+            },
+        }
     }
-}
 
 
 AUTH_PASSWORD_VALIDATORS = [

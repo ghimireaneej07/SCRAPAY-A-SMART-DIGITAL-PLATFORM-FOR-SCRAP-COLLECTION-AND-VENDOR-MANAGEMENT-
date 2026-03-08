@@ -1,12 +1,11 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppFlow } from '../hooks/useAppFlow.js';
-import { catalogService } from '../services/catalogService.js';
 import { orderService } from '../services/orderService.js';
 
 const createInitialFormState = (scrapTypes) =>
-  scrapTypes.reduce((acc, type) => {
-    acc[type] = {
+  scrapTypes.reduce((acc, category) => {
+    acc[category.id] = {
       quantity: '',
       pickupDate: '',
       pickupTime: '',
@@ -16,31 +15,16 @@ const createInitialFormState = (scrapTypes) =>
     return acc;
   }, {});
 
-const normalize = (value) => value.toLowerCase().replace(/[^a-z]/g, '');
-
 const SellScrap = () => {
   const navigate = useNavigate();
   const { selectedScraps, selectedVendor } = useAppFlow();
   const [formData, setFormData] = useState(() => createInitialFormState(selectedScraps));
   const [pickupAddress, setPickupAddress] = useState('');
-  const [categories, setCategories] = useState([]);
   const [error, setError] = useState('');
 
-  const scrapTypes = useMemo(() => selectedScraps, [selectedScraps]);
+  const selectedCategories = useMemo(() => selectedScraps, [selectedScraps]);
 
-  useEffect(() => {
-    const loadCategories = async () => {
-      try {
-        const data = await catalogService.getCategories();
-        setCategories(data);
-      } catch (err) {
-        setError(err.message || 'Unable to load scrap categories.');
-      }
-    };
-    loadCategories();
-  }, []);
-
-  const handleChange = (type, field, value) => {
+  const handleChange = (categoryId, field, value) => {
     setFormData((prev) => {
       const updated = { ...prev };
 
@@ -52,8 +36,8 @@ const SellScrap = () => {
           };
         });
       } else {
-        updated[type] = {
-          ...updated[type],
+        updated[categoryId] = {
+          ...updated[categoryId],
           [field]: value,
         };
       }
@@ -62,52 +46,36 @@ const SellScrap = () => {
     });
   };
 
-  const resolveCategoryId = (type) => {
-    const normalizedType = normalize(type);
-    const exact = categories.find((c) => normalize(c.name) === normalizedType || normalize(c.code) === normalizedType);
-    if (exact) return exact.id;
-
-    const fuzzy = categories.find(
-      (c) => normalizedType.includes(normalize(c.name)) || normalize(c.name).includes(normalizedType),
-    );
-    return fuzzy?.id || null;
-  };
-
   const handleSubmit = async (event) => {
     event.preventDefault();
     setError('');
 
-    const firstType = scrapTypes[0];
-    const pickupDate = formData[firstType]?.pickupDate;
-    const pickupTime = formData[firstType]?.pickupTime;
+    const firstCategory = selectedCategories[0];
+    const pickupDate = formData[firstCategory.id]?.pickupDate;
+    const pickupTime = formData[firstCategory.id]?.pickupTime;
 
-    const items = scrapTypes.map((type) => ({
-      category_id: resolveCategoryId(type),
-      quantity_kg: formData[type].quantity,
-      note: formData[type].note,
+    const items = selectedCategories.map((category) => ({
+      category_id: category.id,
+      quantity_kg: formData[category.id].quantity,
+      note: formData[category.id].note,
       image_url: '',
     }));
 
-    if (items.some((item) => !item.category_id)) {
-      setError('Some selected scrap types do not match backend categories.');
-      return;
-    }
-
     try {
-      await orderService.createOrder({
+      const order = await orderService.createOrder({
         vendor: selectedVendor.id,
         pickup_datetime: `${pickupDate}T${pickupTime}:00+05:30`,
         address: pickupAddress,
         customer_note: '',
         items,
       });
-      navigate('/user/dashboard');
+      navigate(`/order/${order.id}`);
     } catch (err) {
       setError(err.message || 'Unable to submit order.');
     }
   };
 
-  if (!scrapTypes.length || !selectedVendor) {
+  if (!selectedCategories.length || !selectedVendor) {
     return (
       <section className="mx-auto flex min-h-[60vh] max-w-xl flex-col items-center justify-center px-4 text-center text-white">
         <h1 className="text-2xl font-bold text-orange-300">Flow is incomplete</h1>
@@ -154,15 +122,15 @@ const SellScrap = () => {
                 </tr>
               </thead>
               <tbody>
-                {scrapTypes.map((type, index) => (
-                  <tr key={type} className={index % 2 === 0 ? 'bg-[#4A2F20]/60' : ''}>
-                    <td className="px-4 py-2 font-semibold">{type}</td>
+                {selectedCategories.map((category, index) => (
+                  <tr key={category.id} className={index % 2 === 0 ? 'bg-[#4A2F20]/60' : ''}>
+                    <td className="px-4 py-2 font-semibold">{category.name}</td>
                     <td className="px-2 py-2">
                       <input
                         type="number"
                         min="1"
-                        value={formData[type]?.quantity || ''}
-                        onChange={(event) => handleChange(type, 'quantity', event.target.value)}
+                        value={formData[category.id]?.quantity || ''}
+                        onChange={(event) => handleChange(category.id, 'quantity', event.target.value)}
                         className="w-full rounded bg-yellow-100 px-2 py-1 text-black"
                         required
                       />
@@ -170,8 +138,8 @@ const SellScrap = () => {
                     <td className="px-2 py-2">
                       <input
                         type="date"
-                        value={formData[type]?.pickupDate || ''}
-                        onChange={(event) => handleChange(type, 'pickupDate', event.target.value)}
+                        value={formData[category.id]?.pickupDate || ''}
+                        onChange={(event) => handleChange(category.id, 'pickupDate', event.target.value)}
                         className="w-full rounded bg-yellow-100 px-2 py-1 text-black"
                         required
                       />
@@ -179,8 +147,8 @@ const SellScrap = () => {
                     <td className="px-2 py-2">
                       <input
                         type="time"
-                        value={formData[type]?.pickupTime || ''}
-                        onChange={(event) => handleChange(type, 'pickupTime', event.target.value)}
+                        value={formData[category.id]?.pickupTime || ''}
+                        onChange={(event) => handleChange(category.id, 'pickupTime', event.target.value)}
                         className="w-full rounded bg-yellow-100 px-2 py-1 text-black"
                         required
                       />
@@ -188,8 +156,8 @@ const SellScrap = () => {
                     <td className="px-2 py-2">
                       <textarea
                         rows="1"
-                        value={formData[type]?.note || ''}
-                        onChange={(event) => handleChange(type, 'note', event.target.value)}
+                        value={formData[category.id]?.note || ''}
+                        onChange={(event) => handleChange(category.id, 'note', event.target.value)}
                         className="w-full rounded bg-yellow-100 px-2 py-1 text-black"
                       />
                     </td>

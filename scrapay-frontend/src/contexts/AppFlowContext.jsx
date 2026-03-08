@@ -5,7 +5,6 @@ const AppFlowContext = createContext(null);
 export const AppFlowProvider = ({ children }) => {
   const [selectedScraps, setSelectedScraps] = useState([]);
   const [selectedVendor, setSelectedVendor] = useState(null);
-  const [selectedOrder, setSelectedOrder] = useState(null);
 
   const resetSellFlow = () => {
     setSelectedScraps([]);
@@ -18,11 +17,9 @@ export const AppFlowProvider = ({ children }) => {
       setSelectedScraps,
       selectedVendor,
       setSelectedVendor,
-      selectedOrder,
-      setSelectedOrder,
       resetSellFlow,
     }),
-    [selectedOrder, selectedScraps, selectedVendor],
+    [selectedScraps, selectedVendor],
   );
 
   return <AppFlowContext.Provider value={value}>{children}</AppFlowContext.Provider>;
