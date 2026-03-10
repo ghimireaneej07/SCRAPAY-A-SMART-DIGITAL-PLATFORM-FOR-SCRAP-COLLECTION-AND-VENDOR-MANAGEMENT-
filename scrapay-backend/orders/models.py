@@ -1,4 +1,5 @@
 from django.db import models
+from django.core.validators import MaxValueValidator, MinValueValidator
 
 
 class OrderStatus(models.TextChoices):
@@ -54,4 +55,15 @@ class OrderStatusHistory(models.Model):
     class Meta:
         ordering = ["-changed_at"]
 
-# Create your models here.
+
+class OrderFeedback(models.Model):
+    order = models.OneToOneField(Order, on_delete=models.CASCADE, related_name="feedback")
+    customer = models.ForeignKey("accounts.User", on_delete=models.CASCADE, related_name="order_feedbacks")
+    vendor = models.ForeignKey("accounts.User", on_delete=models.CASCADE, related_name="vendor_feedbacks")
+    rating = models.PositiveSmallIntegerField(validators=[MinValueValidator(1), MaxValueValidator(5)])
+    review = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]

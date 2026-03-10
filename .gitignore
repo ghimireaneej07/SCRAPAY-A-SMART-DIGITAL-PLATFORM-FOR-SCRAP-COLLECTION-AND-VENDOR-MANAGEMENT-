@@ -15,3 +15,7 @@ scrapay-frontend/.env.*
 .DS_Store
 Thumbs.db
 *.log
+.venv/
+.devservers.json
+scrapay-backend/media/
+scrapay-backend/server.pid

@@ -5,6 +5,7 @@ import Home from '../pages/Home';
 import Login from '../pages/Login';
 import NotFound from '../pages/NotFound';
 import OrderPage from '../pages/OrderPage';
+import Profile from '../pages/Profile';
 import SelectVendor from '../pages/SelectVendor';
 import SellScrap from '../pages/SellScrap';
 import Unauthorized from '../pages/Unauthorized';
@@ -28,6 +29,7 @@ export const protectedRoutes = [
   { path: '/vendor-selection', element: <SelectVendor />, roles: ['user'] },
   { path: '/sell-scrap', element: <SellScrap />, roles: ['user'] },
   { path: '/order/:id', element: <OrderPage />, roles: ['user'] },
+  { path: '/profile', element: <Profile />, roles: ['user', 'vendor', 'admin'] },
   { path: '/vendor/dashboard', element: <VendorDashboard />, roles: ['vendor'] },
   { path: '/vendor/order-details/:id', element: <VendorOrderDetails />, roles: ['vendor'] },
   { path: '/vendor/completed-orders', element: <CompletedOrders />, roles: ['vendor'] },

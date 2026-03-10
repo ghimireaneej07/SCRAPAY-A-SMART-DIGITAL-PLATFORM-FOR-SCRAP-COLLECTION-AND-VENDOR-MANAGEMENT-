@@ -6,6 +6,7 @@ const AdminPanel = () => {
   const [vendors, setVendors] = useState([]);
   const [categories, setCategories] = useState([]);
   const [rates, setRates] = useState([]);
+  const [analytics, setAnalytics] = useState(null);
   const [error, setError] = useState('');
   const [rateForm, setRateForm] = useState({
     category: '',
@@ -15,14 +16,16 @@ const AdminPanel = () => {
   });
 
   const refresh = async () => {
-    const [vendorData, categoryData, rateData] = await Promise.all([
+    const [vendorData, categoryData, rateData, analyticsData] = await Promise.all([
       adminService.getVendors(),
       catalogService.getCategories(),
       adminService.getMarketRates(),
+      adminService.getAnalytics(),
     ]);
     setVendors(vendorData);
     setCategories(categoryData);
     setRates(rateData);
+    setAnalytics(analyticsData);
   };
 
   useEffect(() => {
@@ -67,6 +70,26 @@ const AdminPanel = () => {
     <section className="min-h-screen bg-gradient-to-br from-[#8B5E3C] to-[#3E2C1C] px-4 py-8 text-white sm:px-8">
       <h1 className="mb-6 text-3xl font-bold text-orange-200">Admin Panel</h1>
       {error && <p className="mb-4 text-sm text-red-300">{error}</p>}
+      {analytics && (
+        <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="rounded-lg bg-[#A1623C] p-4 shadow">
+            <p className="text-xs uppercase text-orange-200">Users</p>
+            <p className="text-2xl font-bold">{analytics.total_users}</p>
+          </div>
+          <div className="rounded-lg bg-[#A1623C] p-4 shadow">
+            <p className="text-xs uppercase text-orange-200">Vendors</p>
+            <p className="text-2xl font-bold">{analytics.total_vendors}</p>
+          </div>
+          <div className="rounded-lg bg-[#A1623C] p-4 shadow">
+            <p className="text-xs uppercase text-orange-200">Orders</p>
+            <p className="text-2xl font-bold">{analytics.total_orders}</p>
+          </div>
+          <div className="rounded-lg bg-[#A1623C] p-4 shadow">
+            <p className="text-xs uppercase text-orange-200">Revenue</p>
+            <p className="text-2xl font-bold">INR {analytics.revenue}</p>
+          </div>
+        </div>
+      )}
 
       <div className="grid gap-8 lg:grid-cols-2">
         <div className="rounded-xl bg-[#A1623C] p-5 shadow-lg">
@@ -77,6 +100,10 @@ const AdminPanel = () => {
                 <div>
                   <p className="font-semibold">{vendor.business_name || vendor.username}</p>
                   <p className="text-xs text-orange-200">{vendor.email}</p>
+                  {vendor.license_number && (
+                    <p className="text-xs text-orange-200">License: {vendor.license_number}</p>
+                  )}
+                  <p className="text-xs text-orange-200">Availability: {vendor.is_online ? 'Online' : 'Offline'}</p>
                 </div>
                 <button
                   type="button"

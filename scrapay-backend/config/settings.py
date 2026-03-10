@@ -72,10 +72,10 @@ DB_ENGINE = os.getenv("DB_ENGINE", "sqlite").lower()
 if DB_ENGINE == "mysql":
     DATABASES = {
         "default": {
-            "ENGINE": "django.db.baME", "scrapay"),
+            "ENGINE": "django.db.backends.mysql",
+            "NAME": os.getenv("DB_NAME", "scrapay"),
             "USER": os.getenv("DB_USER", "root"),
-            "PASSWORD": os.getenv("DB_PASckends.mysql",
-            "NAME": os.getenv("DB_NASWORD", ""),
+            "PASSWORD": os.getenv("DB_PASSWORD", ""),
             "HOST": os.getenv("DB_HOST", "127.0.0.1"),
             "PORT": os.getenv("DB_PORT", "3306"),
             "OPTIONS": {"charset": "utf8mb4"},
@@ -139,9 +139,15 @@ MEDIA_ROOT = BASE_DIR / "media"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-CORS_ALLOWED_ORIGINS = [
-    origin for origin in os.getenv("CORS_ALLOWED_ORIGINS", "http://localhost:5173").split(",") if origin
-]
+if DEBUG:
+    # Dev-friendly: allow frontend from any localhost/127.0.0.1 port.
+    CORS_ALLOW_ALL_ORIGINS = True
+else:
+    CORS_ALLOWED_ORIGINS = [
+        origin
+        for origin in os.getenv("CORS_ALLOWED_ORIGINS", "http://localhost:5173").split(",")
+        if origin
+    ]
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
@@ -161,5 +167,10 @@ SIMPLE_JWT = {
 }
 
 CSRF_TRUSTED_ORIGINS = [
-    origin for origin in os.getenv("CSRF_TRUSTED_ORIGINS", "http://localhost:5173").split(",") if origin
+    origin
+    for origin in os.getenv(
+        "CSRF_TRUSTED_ORIGINS",
+        "http://localhost:5173,http://localhost:5174,http://127.0.0.1:5173,http://127.0.0.1:5174",
+    ).split(",")
+    if origin
 ]

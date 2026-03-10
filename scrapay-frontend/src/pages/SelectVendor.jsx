@@ -18,15 +18,51 @@ const SelectVendor = () => {
   const { selectedScraps, setSelectedVendor } = useAppFlow();
 
   useEffect(() => {
-    const loadVendors = async () => {
+    let mounted = true;
+
+    const loadWithoutGeo = async () => {
       try {
         const result = await orderService.getVendors();
-        setVendors(result);
+        if (mounted) setVendors(result);
       } catch (err) {
-        setError(err.message || 'Unable to load vendors.');
+        if (mounted) setError(err.message || 'Unable to load vendors.');
+      }
+    };
+
+    const loadVendors = async () => {
+      try {
+        if (!navigator.geolocation) {
+          await loadWithoutGeo();
+          return;
+        }
+
+        navigator.geolocation.getCurrentPosition(
+          async (position) => {
+            try {
+              const result = await orderService.getVendors({
+                lat: position.coords.latitude,
+                lon: position.coords.longitude,
+                radius_km: 25,
+              });
+              if (mounted) setVendors(result);
+            } catch (err) {
+              if (mounted) setError(err.message || 'Unable to load vendors.');
+            }
+          },
+          async () => {
+            await loadWithoutGeo();
+          },
+          { enableHighAccuracy: true, timeout: 8000, maximumAge: 60000 },
+        );
+      } catch (err) {
+        if (mounted) setError(err.message || 'Unable to load vendors.');
       }
     };
     loadVendors();
+
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   const sortedVendors = useMemo(() => {
@@ -86,9 +122,12 @@ const SelectVendor = () => {
                 <h2 className="text-2xl font-bold">{vendor.business_name || vendor.username}</h2>
                 <p className="mt-1 text-sm text-orange-200">Rating {vendor.rating_avg}</p>
                 <p className="mt-1 text-sm text-orange-200">Service radius {vendor.service_radius_km} km</p>
+                {vendor.license_number && (
+                  <p className="mt-1 text-sm text-orange-200">License {vendor.license_number}</p>
+                )}
               </div>
               <div className="flex-1 text-sm italic leading-relaxed text-orange-100">
-                {vendor.is_verified ? 'Verified vendor' : 'Verification pending'}
+                {vendor.is_verified ? 'Verified vendor' : 'Verification pending'} • {vendor.is_online ? 'Online' : 'Offline'}
               </div>
               <motion.button
                 onClick={() => handleSelect(vendor)}

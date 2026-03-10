@@ -40,6 +40,8 @@ const UserDashboard = () => {
       }
     };
     loadData();
+    const interval = setInterval(loadData, 30000);
+    return () => clearInterval(interval);
   }, []);
 
   const displayCategories = useMemo(
@@ -48,7 +50,7 @@ const UserDashboard = () => {
         const key = normalize(category.code || category.name);
         return {
           ...category,
-          image: imageMap[key] || '/assets/scrap-hero.png',
+          image: category.icon || imageMap[key] || '/assets/scrap-hero.png',
         };
       }),
     [categories],

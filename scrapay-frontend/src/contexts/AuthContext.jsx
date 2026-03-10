@@ -36,6 +36,10 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
   }, []);
 
+  const updateUser = useCallback((payload) => {
+    setUser((prev) => ({ ...(prev || {}), ...(payload || {}) }));
+  }, []);
+
   const hasRole = useCallback(
     (roles) => {
       if (!user?.role) return false;
@@ -52,9 +56,10 @@ export const AuthProvider = ({ children }) => {
       isBootstrapping,
       login,
       logout,
+      updateUser,
       hasRole,
     }),
-    [hasRole, isBootstrapping, login, logout, user],
+    [hasRole, isBootstrapping, login, logout, updateUser, user],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

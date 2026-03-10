@@ -49,8 +49,11 @@ const VendorOrderDetails = () => {
 
   const handleAction = async (action) => {
     try {
-      await orderService.vendorAction(selectedOrder.id, action);
-      navigate('/vendor/dashboard');
+      const updated = await orderService.vendorAction(selectedOrder.id, action);
+      setSelectedOrder(updated);
+      if (updated.status === 'rejected' || updated.status === 'completed') {
+        navigate('/vendor/dashboard');
+      }
     } catch {
       setError('Unable to update order status.');
     }
@@ -88,21 +91,47 @@ const VendorOrderDetails = () => {
           <span>{pickupDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
         </div>
 
+        <div className="rounded-full bg-[#8B5E3C] px-6 py-2 text-sm font-semibold uppercase tracking-wide text-orange-100">
+          Status: {selectedOrder.status}
+        </div>
+
         <div className="mt-6 flex gap-6">
-          <button
-            className="rounded-full bg-green-500 px-6 py-2 font-bold text-white shadow-md transition-all hover:bg-green-600"
-            onClick={() => handleAction('accept')}
-            type="button"
-          >
-            Accept
-          </button>
-          <button
-            className="rounded-full bg-red-500 px-6 py-2 font-bold text-white shadow-md transition-all hover:bg-red-600"
-            onClick={() => handleAction('reject')}
-            type="button"
-          >
-            Reject
-          </button>
+          {selectedOrder.status === 'pending' && (
+            <>
+              <button
+                className="rounded-full bg-green-500 px-6 py-2 font-bold text-white shadow-md transition-all hover:bg-green-600"
+                onClick={() => handleAction('accept')}
+                type="button"
+              >
+                Accept
+              </button>
+              <button
+                className="rounded-full bg-red-500 px-6 py-2 font-bold text-white shadow-md transition-all hover:bg-red-600"
+                onClick={() => handleAction('reject')}
+                type="button"
+              >
+                Reject
+              </button>
+            </>
+          )}
+          {selectedOrder.status === 'accepted' && (
+            <button
+              className="rounded-full bg-blue-500 px-6 py-2 font-bold text-white shadow-md transition-all hover:bg-blue-600"
+              onClick={() => handleAction('start')}
+              type="button"
+            >
+              Start Pickup
+            </button>
+          )}
+          {selectedOrder.status === 'in_progress' && (
+            <button
+              className="rounded-full bg-green-600 px-6 py-2 font-bold text-white shadow-md transition-all hover:bg-green-700"
+              onClick={() => handleAction('complete')}
+              type="button"
+            >
+              Complete Pickup
+            </button>
+          )}
         </div>
       </div>
     </section>

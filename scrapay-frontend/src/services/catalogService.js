@@ -8,4 +8,8 @@ export const catalogService = {
   getLatestMarketRates() {
     return apiRequest('/catalog/market-rates/latest');
   },
+
+  search(query) {
+    return apiRequest(`/catalog/search?q=${encodeURIComponent(query)}`);
+  },
 };

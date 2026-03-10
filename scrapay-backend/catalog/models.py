@@ -4,6 +4,7 @@ from django.db import models
 class ScrapCategory(models.Model):
     code = models.CharField(max_length=50, unique=True)
     name = models.CharField(max_length=100)
+    icon = models.CharField(max_length=255, blank=True)
     unit = models.CharField(max_length=20, default="kg")
     is_active = models.BooleanField(default=True)
 

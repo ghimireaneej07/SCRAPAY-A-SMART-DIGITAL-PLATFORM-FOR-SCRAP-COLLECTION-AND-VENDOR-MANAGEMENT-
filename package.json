@@ -1,0 +1,9 @@
+{
+  "name": "scrapay-workspace",
+  "private": true,
+  "scripts": {
+    "dev": "npm --prefix scrapay-frontend run dev -- --host 0.0.0.0 --port 5173",
+    "build": "npm --prefix scrapay-frontend run build",
+    "lint": "npm --prefix scrapay-frontend run lint"
+  }
+}

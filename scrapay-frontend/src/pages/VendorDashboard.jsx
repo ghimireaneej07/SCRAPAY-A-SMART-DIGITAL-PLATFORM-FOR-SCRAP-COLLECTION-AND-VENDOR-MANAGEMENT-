@@ -2,6 +2,7 @@ import { motion } from 'framer-motion';
 import { FaArrowRight } from 'react-icons/fa';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { authService } from '../services/authService.js';
 import { orderService } from '../services/orderService.js';
 
 const VendorDashboard = () => {
@@ -9,12 +10,22 @@ const VendorDashboard = () => {
   const [orders, setOrders] = useState([]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
+  const [isOnline, setIsOnline] = useState(false);
+  const [updatingAvailability, setUpdatingAvailability] = useState(false);
 
   useEffect(() => {
     const loadOrders = async () => {
       try {
-        const data = await orderService.getVendorOrders('pending');
-        setOrders(data);
+        const [data, availability] = await Promise.all([
+          orderService.getVendorOrders(),
+          authService.getVendorAvailability(),
+        ]);
+        setOrders(
+          data.filter((order) =>
+            ['pending', 'accepted', 'in_progress'].includes(order.status),
+          ),
+        );
+        setIsOnline(Boolean(availability.is_online));
       } catch (err) {
         setError(err.message || 'Unable to load orders.');
       } finally {
@@ -28,9 +39,33 @@ const VendorDashboard = () => {
     navigate(`/vendor/order-details/${order.id}`);
   };
 
+  const toggleAvailability = async () => {
+    try {
+      setUpdatingAvailability(true);
+      const updated = await authService.setVendorAvailability(!isOnline);
+      setIsOnline(Boolean(updated.is_online));
+    } catch (err) {
+      setError(err.message || 'Unable to update availability.');
+    } finally {
+      setUpdatingAvailability(false);
+    }
+  };
+
   return (
     <section className="min-h-screen bg-gradient-to-br from-[#8B5E3C] to-[#3E2C1C] px-6 py-10 text-white sm:px-10">
       <h1 className="mb-12 text-4xl font-extrabold tracking-wide text-orange-300">Order Requests</h1>
+      <div className="mb-6">
+        <button
+          type="button"
+          onClick={toggleAvailability}
+          disabled={updatingAvailability}
+          className={`rounded px-4 py-2 text-sm font-semibold ${
+            isOnline ? 'bg-green-600 hover:bg-green-700' : 'bg-gray-600 hover:bg-gray-700'
+          } disabled:opacity-60`}
+        >
+          {updatingAvailability ? 'Updating...' : isOnline ? 'Online' : 'Offline'}
+        </button>
+      </div>
       {error && <p className="mb-4 text-sm text-red-300">{error}</p>}
       {loading && <p className="mb-4 text-sm text-orange-200">Loading orders...</p>}
 
@@ -48,6 +83,7 @@ const VendorDashboard = () => {
               <div>
                 <h2 className="text-2xl font-bold text-yellow-100">{order.customer_name}</h2>
                 <p className="mt-1 text-base text-orange-100">{order.items.map((item) => item.category_name).join(', ')}</p>
+                <p className="mt-1 text-sm uppercase tracking-wide text-orange-200">Status: {order.status}</p>
               </div>
               <button
                 onClick={() => handleViewOrder(order)}

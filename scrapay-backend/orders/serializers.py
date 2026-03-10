@@ -6,7 +6,7 @@ from rest_framework import serializers
 from catalog.models import MarketRate
 from accounts.models import User, UserRole
 
-from .models import Order, OrderItem, OrderStatus, OrderStatusHistory
+from .models import Order, OrderFeedback, OrderItem, OrderStatus, OrderStatusHistory
 
 
 class OrderItemWriteSerializer(serializers.Serializer):
@@ -38,6 +38,9 @@ class OrderCreateSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Selected vendor is invalid.")
         if not value.is_active:
             raise serializers.ValidationError("Selected vendor is not active.")
+        vendor_profile = getattr(value, "vendor_profile", None)
+        if not vendor_profile or not vendor_profile.is_verified:
+            raise serializers.ValidationError("Selected vendor is not verified.")
         return value
 
     def validate_pickup_datetime(self, value):
@@ -86,6 +89,18 @@ class OrderReadSerializer(serializers.ModelSerializer):
     items = OrderItemReadSerializer(many=True, read_only=True)
     customer_name = serializers.CharField(source="customer.username", read_only=True)
     vendor_name = serializers.CharField(source="vendor.username", read_only=True)
+    feedback = serializers.SerializerMethodField()
+
+    def get_feedback(self, obj):
+        feedback = getattr(obj, "feedback", None)
+        if not feedback:
+            return None
+        return {
+            "id": feedback.id,
+            "rating": feedback.rating,
+            "review": feedback.review,
+            "created_at": feedback.created_at,
+        }
 
     class Meta:
         model = Order
@@ -104,11 +119,19 @@ class OrderReadSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
             "items",
+            "feedback",
         )
+
+
+class OrderFeedbackWriteSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = OrderFeedback
+        fields = ("rating", "review")
 
 
 class VendorDirectorySerializer(serializers.ModelSerializer):
     business_name = serializers.CharField(source="vendor_profile.business_name", default="")
+    license_number = serializers.CharField(source="vendor_profile.license_number", default="")
     rating_avg = serializers.DecimalField(
         source="vendor_profile.rating_avg", max_digits=3, decimal_places=2, default=Decimal("0.00")
     )
@@ -116,6 +139,7 @@ class VendorDirectorySerializer(serializers.ModelSerializer):
         source="vendor_profile.service_radius_km", max_digits=6, decimal_places=2, default=Decimal("0.00")
     )
     is_verified = serializers.BooleanField(source="vendor_profile.is_verified", default=False)
+    is_online = serializers.BooleanField(source="vendor_availability.is_online", default=False)
 
     class Meta:
         model = User
@@ -124,7 +148,9 @@ class VendorDirectorySerializer(serializers.ModelSerializer):
             "username",
             "email",
             "business_name",
+            "license_number",
             "rating_avg",
             "service_radius_km",
             "is_verified",
+            "is_online",
         )

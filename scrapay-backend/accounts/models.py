@@ -17,6 +17,8 @@ class User(AbstractUser):
 class UserProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="profile")
     full_name = models.CharField(max_length=255)
+    avatar_url = models.URLField(blank=True)
+    avatar = models.ImageField(upload_to="avatars/", blank=True, null=True)
     address = models.TextField(blank=True)
     city = models.CharField(max_length=100, blank=True)
     state = models.CharField(max_length=100, blank=True)
@@ -31,6 +33,7 @@ class UserProfile(models.Model):
 class VendorProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="vendor_profile")
     business_name = models.CharField(max_length=255)
+    license_number = models.CharField(max_length=100, blank=True)
     service_radius_km = models.DecimalField(max_digits=6, decimal_places=2, default=10)
     rating_avg = models.DecimalField(max_digits=3, decimal_places=2, default=0)
     rating_count = models.PositiveIntegerField(default=0)
@@ -38,5 +41,14 @@ class VendorProfile(models.Model):
 
     def __str__(self):
         return self.business_name
+
+
+class VendorAvailability(models.Model):
+    vendor = models.OneToOneField(User, on_delete=models.CASCADE, related_name="vendor_availability")
+    is_online = models.BooleanField(default=False)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.vendor.username} - {'online' if self.is_online else 'offline'}"
 
 # Create your models here.

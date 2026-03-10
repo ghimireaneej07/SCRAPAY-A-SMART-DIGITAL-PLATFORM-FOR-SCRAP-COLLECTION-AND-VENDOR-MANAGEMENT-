@@ -12,6 +12,10 @@ export const adminService = {
     });
   },
 
+  getAnalytics() {
+    return apiRequest('/auth/admin/analytics');
+  },
+
   getMarketRates() {
     return apiRequest('/catalog/admin/market-rates/');
   },

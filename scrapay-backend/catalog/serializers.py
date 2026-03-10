@@ -6,7 +6,7 @@ from .models import MarketRate, ScrapCategory
 class ScrapCategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = ScrapCategory
-        fields = ("id", "code", "name", "unit")
+        fields = ("id", "code", "name", "icon", "unit")
 
 
 class MarketRateSerializer(serializers.ModelSerializer):
