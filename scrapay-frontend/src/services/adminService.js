@@ -1,6 +1,18 @@
 import { apiRequest } from './apiClient.js';
 
 export const adminService = {
+  getAccounts(role) {
+    const query = role ? `?role=${encodeURIComponent(role)}` : '';
+    return apiRequest(`/auth/admin/accounts${query}`);
+  },
+
+  setAccountStatus(userId, isActive) {
+    return apiRequest(`/auth/admin/accounts/${userId}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ is_active: isActive }),
+    });
+  },
+
   getVendors() {
     return apiRequest('/auth/admin/vendors');
   },
@@ -14,6 +26,11 @@ export const adminService = {
 
   getAnalytics() {
     return apiRequest('/auth/admin/analytics');
+  },
+
+  getOrders(status) {
+    const query = status ? `?status=${encodeURIComponent(status)}` : '';
+    return apiRequest(`/auth/admin/orders${query}`);
   },
 
   getMarketRates() {

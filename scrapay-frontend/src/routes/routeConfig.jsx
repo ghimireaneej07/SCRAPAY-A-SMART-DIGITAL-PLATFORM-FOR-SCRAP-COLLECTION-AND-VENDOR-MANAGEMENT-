@@ -6,6 +6,7 @@ import Login from '../pages/Login';
 import NotFound from '../pages/NotFound';
 import OrderPage from '../pages/OrderPage';
 import Profile from '../pages/Profile';
+import RegisterRoleSelect from '../pages/RegisterRoleSelect';
 import SelectVendor from '../pages/SelectVendor';
 import SellScrap from '../pages/SellScrap';
 import Unauthorized from '../pages/Unauthorized';
@@ -19,6 +20,7 @@ export const publicRoutes = [
   { path: '/', element: <Home /> },
   { path: '/about', element: <About /> },
   { path: '/login', element: <Login /> },
+  { path: '/register', element: <RegisterRoleSelect /> },
   { path: '/register/user', element: <UserRegister /> },
   { path: '/register/vendor', element: <VendorRegister /> },
   { path: '/unauthorized', element: <Unauthorized /> },

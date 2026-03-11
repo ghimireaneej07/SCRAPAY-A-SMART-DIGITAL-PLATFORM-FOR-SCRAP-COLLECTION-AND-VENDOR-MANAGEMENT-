@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 import { FaArrowRight } from 'react-icons/fa';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { authService } from '../services/authService.js';
 import { orderService } from '../services/orderService.js';
@@ -35,6 +35,16 @@ const VendorDashboard = () => {
     loadOrders();
   }, []);
 
+  const stats = useMemo(() => {
+    const pending = orders.filter((order) => order.status === 'pending').length;
+    const active = orders.filter((order) => ['accepted', 'in_progress'].includes(order.status)).length;
+    return {
+      total: orders.length,
+      pending,
+      active,
+    };
+  }, [orders]);
+
   const handleViewOrder = (order) => {
     navigate(`/vendor/order-details/${order.id}`);
   };
@@ -53,21 +63,46 @@ const VendorDashboard = () => {
 
   return (
     <section className="min-h-screen bg-gradient-to-br from-[#8B5E3C] to-[#3E2C1C] px-6 py-10 text-white sm:px-10">
-      <h1 className="mb-12 text-4xl font-extrabold tracking-wide text-orange-300">Order Requests</h1>
-      <div className="mb-6">
+      <div className="mb-8 flex flex-col gap-4 rounded-3xl border border-orange-200/15 bg-[#4A2F20]/75 p-6 shadow-xl lg:flex-row lg:items-end lg:justify-between">
+        <div>
+          <p className="text-sm uppercase tracking-[0.3em] text-orange-200/70">Vendor Operations</p>
+          <h1 className="mt-2 text-4xl font-extrabold tracking-wide text-orange-300">Order Requests</h1>
+          <p className="mt-2 text-sm text-orange-100/80">Monitor incoming pickups and move active jobs forward.</p>
+        </div>
         <button
           type="button"
           onClick={toggleAvailability}
           disabled={updatingAvailability}
-          className={`rounded px-4 py-2 text-sm font-semibold ${
+          className={`rounded-full px-5 py-2 text-sm font-semibold ${
             isOnline ? 'bg-green-600 hover:bg-green-700' : 'bg-gray-600 hover:bg-gray-700'
           } disabled:opacity-60`}
         >
-          {updatingAvailability ? 'Updating...' : isOnline ? 'Online' : 'Offline'}
+          {updatingAvailability ? 'Updating...' : isOnline ? 'Available for pickup' : 'Marked offline'}
         </button>
+      </div>
+      <div className="mb-8 grid gap-4 md:grid-cols-3">
+        <div className="rounded-2xl bg-[#A1623C] p-4 shadow-lg">
+          <p className="text-xs uppercase text-orange-200">Open queue</p>
+          <p className="mt-2 text-3xl font-bold text-white">{stats.total}</p>
+        </div>
+        <div className="rounded-2xl bg-[#A1623C] p-4 shadow-lg">
+          <p className="text-xs uppercase text-orange-200">Pending review</p>
+          <p className="mt-2 text-3xl font-bold text-white">{stats.pending}</p>
+        </div>
+        <div className="rounded-2xl bg-[#A1623C] p-4 shadow-lg">
+          <p className="text-xs uppercase text-orange-200">Active pickups</p>
+          <p className="mt-2 text-3xl font-bold text-white">{stats.active}</p>
+        </div>
       </div>
       {error && <p className="mb-4 text-sm text-red-300">{error}</p>}
       {loading && <p className="mb-4 text-sm text-orange-200">Loading orders...</p>}
+
+      {!loading && orders.length === 0 && (
+        <div className="rounded-2xl border border-dashed border-orange-200/20 bg-[#4A2F20]/60 p-8 text-center">
+          <h2 className="text-xl font-semibold text-orange-200">No active pickup requests</h2>
+          <p className="mt-2 text-sm text-orange-100/80">New customer orders will appear here when assigned to you.</p>
+        </div>
+      )}
 
       <div className="grid gap-8 md:grid-cols-2">
         {orders.map((order, index) => (

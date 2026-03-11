@@ -92,6 +92,35 @@ class OrdersApiTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(response.data["status"], OrderStatus.PENDING)
 
+    def test_user_cannot_create_order_with_duplicate_categories(self):
+        self.client.force_authenticate(self.customer)
+        payload = {
+            "vendor": self.vendor.id,
+            "pickup_datetime": (timezone.now() + timedelta(days=1)).isoformat(),
+            "address": "123 Test Street, Kolkata",
+            "customer_note": "",
+            "items": [
+                {"category_id": self.category.id, "quantity_kg": "5.00"},
+                {"category_id": self.category.id, "quantity_kg": "2.00"},
+            ],
+        }
+        response = self.client.post("/api/orders/my/", payload, format="json")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("only once", str(response.data))
+
+    def test_user_cannot_create_order_with_short_address(self):
+        self.client.force_authenticate(self.customer)
+        payload = {
+            "vendor": self.vendor.id,
+            "pickup_datetime": (timezone.now() + timedelta(days=1)).isoformat(),
+            "address": "Too short",
+            "customer_note": "",
+            "items": [{"category_id": self.category.id, "quantity_kg": "5.00"}],
+        }
+        response = self.client.post("/api/orders/my/", payload, format="json")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("more specific", str(response.data))
+
     def test_vendor_cannot_complete_pending_order_directly(self):
         order_id = self._create_order_for_vendor()
 

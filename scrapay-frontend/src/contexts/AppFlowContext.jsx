@@ -1,14 +1,42 @@
-import { createContext, useContext, useMemo, useState } from 'react';
+import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 
 const AppFlowContext = createContext(null);
+const STORAGE_KEY = 'scrapay_app_flow';
+
+const loadStoredFlow = () => {
+  try {
+    const raw = sessionStorage.getItem(STORAGE_KEY);
+    if (!raw) {
+      return { selectedScraps: [], selectedVendor: null };
+    }
+    const parsed = JSON.parse(raw);
+    return {
+      selectedScraps: Array.isArray(parsed.selectedScraps) ? parsed.selectedScraps : [],
+      selectedVendor: parsed.selectedVendor || null,
+    };
+  } catch {
+    return { selectedScraps: [], selectedVendor: null };
+  }
+};
 
 export const AppFlowProvider = ({ children }) => {
-  const [selectedScraps, setSelectedScraps] = useState([]);
-  const [selectedVendor, setSelectedVendor] = useState(null);
+  const [selectedScraps, setSelectedScraps] = useState(() => loadStoredFlow().selectedScraps);
+  const [selectedVendor, setSelectedVendor] = useState(() => loadStoredFlow().selectedVendor);
+
+  useEffect(() => {
+    sessionStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        selectedScraps,
+        selectedVendor,
+      }),
+    );
+  }, [selectedScraps, selectedVendor]);
 
   const resetSellFlow = () => {
     setSelectedScraps([]);
     setSelectedVendor(null);
+    sessionStorage.removeItem(STORAGE_KEY);
   };
 
   const value = useMemo(

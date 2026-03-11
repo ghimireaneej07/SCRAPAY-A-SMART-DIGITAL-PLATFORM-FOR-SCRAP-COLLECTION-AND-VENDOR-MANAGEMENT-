@@ -1,4 +1,5 @@
 import os
+import sys
 from pathlib import Path
 from datetime import timedelta
 
@@ -9,7 +10,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BASE_DIR / ".env")
 
 
-SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "dev-only-change-me")
+SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "dev-only-change-me-replace-this-with-a-secure-secret")
 
 DEBUG = os.getenv("DJANGO_DEBUG", "1") == "1"
 
@@ -68,7 +69,11 @@ WSGI_APPLICATION = "config.wsgi.application"
 ASGI_APPLICATION = "config.asgi.application"
 
 
+RUNNING_TESTS = "test" in sys.argv
 DB_ENGINE = os.getenv("DB_ENGINE", "sqlite").lower()
+if RUNNING_TESTS:
+    DB_ENGINE = os.getenv("TEST_DB_ENGINE", "sqlite").lower()
+
 if DB_ENGINE == "mysql":
     DATABASES = {
         "default": {
@@ -148,6 +153,11 @@ else:
         for origin in os.getenv("CORS_ALLOWED_ORIGINS", "http://localhost:5173").split(",")
         if origin
     ]
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_BROWSER_XSS_FILTER = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (

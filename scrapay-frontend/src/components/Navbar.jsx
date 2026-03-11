@@ -7,7 +7,11 @@ import { useNotifications } from '../hooks/useNotifications.js';
 import { catalogService } from '../services/catalogService.js';
 
 const navLinkClass = ({ isActive }) =>
-  `rounded-md px-2 py-1 text-sm font-semibold transition ${isActive ? 'text-white' : 'text-orange-100/90 hover:text-white'}`;
+  `relative rounded-full px-4 py-2 text-sm font-semibold transition-all duration-200 ${
+    isActive
+      ? 'bg-white/10 text-[#ffe2bc] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08)]'
+      : 'text-[#f2d8b7] hover:bg-white/6 hover:text-white'
+  }`;
 
 const ProfileAvatar = ({ user }) => {
   const label = user?.full_name || user?.username || 'U';
@@ -46,7 +50,7 @@ const Navbar = () => {
       ]
     : [
         { to: '/login', label: 'Sign In' },
-        { to: '/register/user', label: 'Sign Up' },
+        { to: '/register', label: 'Sign Up' },
       ];
 
   const closeMenu = () => setIsOpen(false);
@@ -94,12 +98,22 @@ const Navbar = () => {
   );
 
   return (
-    <header className="sticky top-0 z-50 border-b border-black/10 bg-gradient-to-r from-[#8b5b3d] to-[#7a4d34] text-white shadow-2xl">
-      <nav className="mx-auto flex w-full max-w-7xl items-center gap-3 px-4 py-3 sm:px-6">
-        <Link to="/" className="text-4xl font-black tracking-tight text-[#ffbe70]" onClick={closeMenu}>
-          Scrapay
+    <header className="sticky top-0 z-50 border-b border-white/8 bg-[linear-gradient(90deg,rgba(115,70,43,0.96),rgba(143,93,58,0.96),rgba(115,70,43,0.96))] text-white shadow-[0_18px_40px_rgba(0,0,0,0.18)] backdrop-blur-xl">
+      <nav className="mx-auto flex w-full max-w-7xl items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
+        <Link
+          to="/"
+          className="flex items-center gap-3 rounded-full pr-4 transition hover:opacity-95"
+          onClick={closeMenu}
+        >
+          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[linear-gradient(180deg,#ffcb7a,#f59e0b)] text-lg font-black text-[#4a2f20] shadow-[0_10px_24px_rgba(245,158,11,0.28)]">
+            S
+          </div>
+          <div className="leading-none">
+            <span className="block text-[2.1rem] font-black tracking-tight text-[#ffbf6f]">Scrapay</span>
+          </div>
         </Link>
 
+        {isAuthenticated && (
         <div className="relative hidden flex-1 md:block">
           <div className="flex items-center gap-2 rounded-full border border-[#c07a4a] bg-[#6a3f29]/95 px-4 py-2">
             <Search className="h-4 w-4 text-[#ffd9a7]" />
@@ -161,19 +175,22 @@ const Navbar = () => {
             </div>
           )}
         </div>
+        )}
 
-        <div className="hidden items-center gap-3 md:flex">
-          <NavLink to="/" className={navLinkClass}>
-            Home
-          </NavLink>
-          <NavLink to="/about" className={navLinkClass}>
-            About
-          </NavLink>
-          {authLinks.map((link) => (
-            <NavLink key={link.to} to={link.to} className={navLinkClass}>
-              {link.label}
+        <div className="hidden items-center gap-2 md:flex">
+          <div className="flex items-center gap-1 rounded-full border border-white/8 bg-black/10 px-2 py-1">
+            <NavLink to="/" className={navLinkClass}>
+              Home
             </NavLink>
-          ))}
+            <NavLink to="/about" className={navLinkClass}>
+              About
+            </NavLink>
+            {authLinks.map((link) => (
+              <NavLink key={link.to} to={link.to} className={navLinkClass}>
+                {link.label}
+              </NavLink>
+            ))}
+          </div>
           {isAuthenticated && (
             <span className="rounded-full bg-[#6d412b] px-3 py-1 text-xs font-semibold text-[#ffd9a7]">
               Alerts {unreadCount} Live
@@ -228,7 +245,7 @@ const Navbar = () => {
 
         <button
           type="button"
-          className="ml-auto inline-flex items-center justify-center rounded-md p-2 hover:bg-[#70482f] md:hidden"
+          className="ml-auto inline-flex items-center justify-center rounded-full border border-white/10 bg-black/10 p-2.5 transition hover:bg-white/10 md:hidden"
           aria-label={isOpen ? 'Close navigation menu' : 'Open navigation menu'}
           aria-expanded={isOpen}
           onClick={() => setIsOpen((prev) => !prev)}
@@ -243,18 +260,20 @@ const Navbar = () => {
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            className="overflow-hidden border-t border-orange-200/20 bg-[#7f5537] md:hidden"
+            className="overflow-hidden border-t border-white/8 bg-[linear-gradient(180deg,#7f5537,#6a432d)] md:hidden"
           >
             <div className="space-y-3 px-4 py-4">
-              <div className="flex items-center gap-2 rounded-full border border-[#c07a4a] bg-[#6a3f29]/95 px-4 py-2">
-                <Search className="h-4 w-4 text-[#ffd9a7]" />
-                <input
-                  value={query}
-                  onChange={(event) => setQuery(event.target.value)}
-                  placeholder="Search"
-                  className="w-full bg-transparent text-sm text-[#ffe7c6] placeholder:text-[#ffe7c6]/70 focus:outline-none"
-                />
-              </div>
+              {isAuthenticated && (
+                <div className="flex items-center gap-2 rounded-full border border-[#c07a4a] bg-[#6a3f29]/95 px-4 py-2">
+                  <Search className="h-4 w-4 text-[#ffd9a7]" />
+                  <input
+                    value={query}
+                    onChange={(event) => setQuery(event.target.value)}
+                    placeholder="Search"
+                    className="w-full bg-transparent text-sm text-[#ffe7c6] placeholder:text-[#ffe7c6]/70 focus:outline-none"
+                  />
+                </div>
+              )}
               <NavLink to="/" className={navLinkClass} onClick={closeMenu}>
                 Home
               </NavLink>

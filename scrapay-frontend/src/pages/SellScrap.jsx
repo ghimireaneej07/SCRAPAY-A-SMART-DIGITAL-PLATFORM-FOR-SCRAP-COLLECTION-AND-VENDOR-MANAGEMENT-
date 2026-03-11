@@ -15,14 +15,21 @@ const createInitialFormState = (scrapTypes) =>
     return acc;
   }, {});
 
+const buildPickupDatetime = (pickupDate, pickupTime) => {
+  const pickup = new Date(`${pickupDate}T${pickupTime}`);
+  return pickup.toISOString();
+};
+
 const SellScrap = () => {
   const navigate = useNavigate();
-  const { selectedScraps, selectedVendor } = useAppFlow();
+  const { selectedScraps, selectedVendor, resetSellFlow } = useAppFlow();
   const [formData, setFormData] = useState(() => createInitialFormState(selectedScraps));
   const [pickupAddress, setPickupAddress] = useState('');
   const [error, setError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
   const selectedCategories = useMemo(() => selectedScraps, [selectedScraps]);
+  const selectedCount = selectedCategories.length;
 
   const handleChange = (categoryId, field, value) => {
     setFormData((prev) => {
@@ -54,24 +61,39 @@ const SellScrap = () => {
     const pickupDate = formData[firstCategory.id]?.pickupDate;
     const pickupTime = formData[firstCategory.id]?.pickupTime;
 
+    if (!pickupAddress.trim()) {
+      setError('Pickup address is required.');
+      return;
+    }
+
     const items = selectedCategories.map((category) => ({
       category_id: category.id,
-      quantity_kg: formData[category.id].quantity,
+      quantity_kg: Number(formData[category.id].quantity),
       note: formData[category.id].note,
       image_url: '',
     }));
 
+    const hasInvalidQuantity = items.some((item) => !Number.isFinite(item.quantity_kg) || item.quantity_kg <= 0);
+    if (hasInvalidQuantity) {
+      setError('Enter a valid quantity for each selected scrap category.');
+      return;
+    }
+
     try {
+      setSubmitting(true);
       const order = await orderService.createOrder({
         vendor: selectedVendor.id,
-        pickup_datetime: `${pickupDate}T${pickupTime}:00+05:30`,
-        address: pickupAddress,
+        pickup_datetime: buildPickupDatetime(pickupDate, pickupTime),
+        address: pickupAddress.trim(),
         customer_note: '',
         items,
       });
+      resetSellFlow();
       navigate(`/order/${order.id}`);
     } catch (err) {
       setError(err.message || 'Unable to submit order.');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -98,6 +120,10 @@ const SellScrap = () => {
         <p className="mb-8 text-center text-orange-100">
           Selected vendor: <span className="font-semibold">{selectedVendor.business_name || selectedVendor.username}</span>
         </p>
+        <div className="mb-6 rounded-2xl border border-orange-200/20 bg-[#4A2F20]/70 p-4 text-sm text-orange-100">
+          <p className="font-semibold text-orange-200">Order summary</p>
+          <p className="mt-1">{selectedCount} scrap categories selected for pickup.</p>
+        </div>
 
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
@@ -172,9 +198,10 @@ const SellScrap = () => {
           <div className="flex justify-center">
             <button
               type="submit"
-              className="rounded-lg bg-orange-400 px-12 py-3 font-bold text-white shadow-md transition-all duration-300 hover:bg-orange-500 hover:shadow-xl"
+              disabled={submitting}
+              className="rounded-lg bg-orange-400 px-12 py-3 font-bold text-white shadow-md transition-all duration-300 hover:bg-orange-500 hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-60"
             >
-              Submit Scrap Order
+              {submitting ? 'Submitting Order...' : 'Submit Scrap Order'}
             </button>
           </div>
         </form>

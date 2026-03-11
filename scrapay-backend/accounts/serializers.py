@@ -166,6 +166,28 @@ class AdminVendorVerifySerializer(serializers.Serializer):
     is_verified = serializers.BooleanField()
 
 
+class AdminAccountListSerializer(serializers.ModelSerializer):
+    full_name = serializers.CharField(source="profile.full_name", default="")
+    business_name = serializers.CharField(source="vendor_profile.business_name", default="")
+
+    class Meta:
+        model = User
+        fields = (
+            "id",
+            "username",
+            "email",
+            "phone",
+            "role",
+            "is_active",
+            "full_name",
+            "business_name",
+        )
+
+
+class AdminAccountStatusSerializer(serializers.Serializer):
+    is_active = serializers.BooleanField()
+
+
 class VendorAvailabilitySerializer(serializers.ModelSerializer):
     class Meta:
         model = VendorAvailability

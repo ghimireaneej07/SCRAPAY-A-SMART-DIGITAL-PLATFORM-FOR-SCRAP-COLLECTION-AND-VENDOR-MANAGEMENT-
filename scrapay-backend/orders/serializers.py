@@ -3,7 +3,7 @@ from decimal import Decimal
 from django.utils import timezone
 from rest_framework import serializers
 
-from catalog.models import MarketRate
+from catalog.models import MarketRate, ScrapCategory
 from accounts.models import User, UserRole
 
 from .models import Order, OrderFeedback, OrderItem, OrderStatus, OrderStatusHistory
@@ -14,6 +14,12 @@ class OrderItemWriteSerializer(serializers.Serializer):
     quantity_kg = serializers.DecimalField(max_digits=10, decimal_places=2)
     note = serializers.CharField(required=False, allow_blank=True)
     image_url = serializers.URLField(required=False, allow_blank=True)
+
+    def validate_category_id(self, value):
+        category = ScrapCategory.objects.filter(id=value, is_active=True).first()
+        if not category:
+            raise serializers.ValidationError("Selected scrap category is invalid.")
+        return value
 
 
 class OrderCreateSerializer(serializers.ModelSerializer):
@@ -26,10 +32,20 @@ class OrderCreateSerializer(serializers.ModelSerializer):
     def validate_items(self, value):
         if not value:
             raise serializers.ValidationError("At least one order item is required.")
+        seen_categories = set()
         for item in value:
             if item["quantity_kg"] <= 0:
                 raise serializers.ValidationError("Quantity must be greater than zero for all items.")
+            if item["category_id"] in seen_categories:
+                raise serializers.ValidationError("Each scrap category should be added only once per order.")
+            seen_categories.add(item["category_id"])
         return value
+
+    def validate_address(self, value):
+        cleaned = value.strip()
+        if len(cleaned) < 10:
+            raise serializers.ValidationError("Pickup address must be more specific.")
+        return cleaned
 
     def validate_vendor(self, value):
         if not value:

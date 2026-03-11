@@ -1,5 +1,3 @@
-from decimal import Decimal, ROUND_HALF_UP
-
 from django.db.models import Q
 from django.utils import timezone
 from rest_framework import viewsets
@@ -39,20 +37,6 @@ class LatestMarketRateListView(ListAPIView):
             if latest:
                 latest_ids.append(latest.id)
         return MarketRate.objects.filter(id__in=latest_ids).select_related("category")
-
-    def list(self, request, *args, **kwargs):
-        response = super().list(request, *args, **kwargs)
-        now = timezone.now()
-        # Lightweight live-market simulation around stored base rate for current date/time.
-        minute_factor = Decimal(((now.minute % 10) - 5)) / Decimal("1000")
-        hour_factor = Decimal((now.hour - 12)) / Decimal("2000")
-        factor = Decimal("1.0") + minute_factor + hour_factor
-        for row in response.data:
-            base = Decimal(str(row["price_per_kg"]))
-            live = (base * factor).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
-            row["price_per_kg"] = f"{live:.2f}"
-            row["as_of"] = now.isoformat()
-        return response
 
 
 class GlobalSearchView(ListAPIView):

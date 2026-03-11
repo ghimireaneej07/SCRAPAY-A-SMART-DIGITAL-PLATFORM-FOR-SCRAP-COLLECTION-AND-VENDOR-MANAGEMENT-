@@ -10,6 +10,8 @@ from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from .models import User, UserRole
 from .permissions import IsAdminRole, IsVendorRole
 from .serializers import (
+    AdminAccountListSerializer,
+    AdminAccountStatusSerializer,
     AdminVendorListSerializer,
     AdminVendorVerifySerializer,
     CustomTokenObtainPairSerializer,
@@ -19,6 +21,7 @@ from .serializers import (
     UserSerializer,
     VendorAvailabilitySerializer,
 )
+from orders.serializers import OrderReadSerializer
 
 
 class RegisterUserView(CreateAPIView):
@@ -145,6 +148,39 @@ class AdminVendorVerifyView(APIView):
         return Response(payload, status=status.HTTP_200_OK)
 
 
+class AdminAccountListView(APIView):
+    permission_classes = [IsAuthenticated, IsAdminRole]
+
+    def get(self, request):
+        role_filter = (request.query_params.get("role") or "").strip()
+        queryset = User.objects.select_related("profile", "vendor_profile").order_by("id")
+        if role_filter:
+            queryset = queryset.filter(role=role_filter)
+        serializer = AdminAccountListSerializer(queryset[:50], many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class AdminAccountStatusView(APIView):
+    permission_classes = [IsAuthenticated, IsAdminRole]
+
+    def patch(self, request, user_id):
+        target_user = User.objects.filter(id=user_id).first()
+        if not target_user:
+            return Response({"detail": "Account not found."}, status=status.HTTP_404_NOT_FOUND)
+        if target_user.id == request.user.id:
+            return Response(
+                {"detail": "You cannot deactivate your own admin account."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        serializer = AdminAccountStatusSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        target_user.is_active = serializer.validated_data["is_active"]
+        target_user.save(update_fields=["is_active"])
+        payload = AdminAccountListSerializer(target_user).data
+        return Response(payload, status=status.HTTP_200_OK)
+
+
 class VendorAvailabilityView(APIView):
     permission_classes = [IsAuthenticated, IsVendorRole]
 
@@ -185,4 +221,23 @@ class AdminAnalyticsView(APIView):
         )["total"] or 0
         totals["revenue"] = revenue
         return Response(totals, status=status.HTTP_200_OK)
+
+
+class AdminOrderListView(APIView):
+    permission_classes = [IsAuthenticated, IsAdminRole]
+
+    def get(self, request):
+        from orders.models import Order
+
+        queryset = (
+            Order.objects.select_related("customer", "vendor")
+            .prefetch_related("items", "items__category")
+            .order_by("-created_at")
+        )
+        status_filter = (request.query_params.get("status") or "").strip()
+        if status_filter:
+            queryset = queryset.filter(status=status_filter)
+
+        serializer = OrderReadSerializer(queryset[:25], many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 # Create your views here.
