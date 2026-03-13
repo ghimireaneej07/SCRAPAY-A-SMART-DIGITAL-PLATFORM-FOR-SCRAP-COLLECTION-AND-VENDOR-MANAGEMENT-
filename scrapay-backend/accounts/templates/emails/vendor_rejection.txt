@@ -1,0 +1,20 @@
+Dear {{ vendor_name }},
+
+Thank you for your interest in becoming a verified vendor on {{ project_name }}.
+
+After reviewing your application, we are unable to approve your vendor account at this time.
+
+Business Name: {{ business_name }}
+{% if rejection_reason %}
+Reason: {{ rejection_reason }}
+{% endif %}
+
+If you believe this decision was made in error or if you would like to reapply with updated information, please contact our support team.
+
+We appreciate your understanding.
+
+Best regards,
+The {{ project_name }} Team
+
+---
+This is an automated message. Please do not reply to this email.

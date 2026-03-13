@@ -1,0 +1,13 @@
+Namaste {{ customer_name }},
+
+Your Scrapay Order #{{ order_id }} has been completed successfully!
+
+Final amount: Rs. {{ total_final }}
+
+We appreciate you choosing Scrapay for responsible scrap recycling. Together we are making a difference!
+
+If you have any feedback, please rate your experience in the app.
+
+Thank you,
+Team Scrapay
+(Verified Scrapay ID)

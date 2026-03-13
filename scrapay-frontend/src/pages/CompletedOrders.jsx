@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { FaCheckCircle } from 'react-icons/fa';
+import { useEffect, useState } from 'react';
+import { CheckCircle2 } from 'lucide-react';
 import { orderService } from '../services/orderService.js';
 
 const CompletedOrders = () => {
@@ -22,7 +22,7 @@ const CompletedOrders = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#8B5E3C] to-[#3E2C1C] px-6 py-10 font-serif text-white">
+    <div className="min-h-screen bg-gradient-to-br from-[#8B5E3C] to-[#3E2C1C] px-6 py-10 text-white">
       <h2 className="mb-8 text-center text-3xl font-bold text-orange-300">Completed Orders</h2>
       {loading && <p className="mb-4 text-center text-sm text-orange-100">Loading completed orders...</p>}
       {error && <p className="mb-4 text-center text-sm text-red-300">{error}</p>}
@@ -49,7 +49,7 @@ const CompletedOrders = () => {
             <div className="text-sm text-white">{order.address}</div>
 
             <div className="flex justify-end pr-4">
-              <FaCheckCircle className="animate-pulse text-3xl text-green-300 drop-shadow-lg" />
+              <CheckCircle2 className="animate-pulse text-3xl text-green-300 drop-shadow-lg" />
             </div>
           </div>
         ))}

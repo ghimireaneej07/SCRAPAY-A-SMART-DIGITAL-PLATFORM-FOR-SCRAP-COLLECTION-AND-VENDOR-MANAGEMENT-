@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
 import { ArrowRight, BadgeCheck, Recycle, Route, ShieldCheck } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../hooks/useAuth.js';
 
 const sections = [
   {
@@ -31,6 +32,58 @@ const values = [
 ];
 
 const About = () => {
+  const { user, isAuthenticated, isBootstrapping } = useAuth();
+
+  const nextStepConfig = (() => {
+    if (isBootstrapping) {
+      return {
+        title: 'Loading your workspace.',
+        copy: 'We are checking your current session so we can show the most relevant next action.',
+        ctaLabel: 'Please wait',
+        to: '/about',
+        disabled: true,
+      };
+    }
+
+    if (!isAuthenticated) {
+      return {
+        title: 'Move from story to signup.',
+        copy: 'Choose the role that fits you and enter the Scrapay flow as a user, vendor, or future platform operator.',
+        ctaLabel: 'Choose Your Role',
+        to: '/register',
+        disabled: false,
+      };
+    }
+
+    if (user?.role === 'vendor') {
+      return {
+        title: 'Continue into vendor operations.',
+        copy: 'Open your vendor workspace to review pickup requests, manage queue activity, and keep service availability updated.',
+        ctaLabel: 'Go to Vendor Dashboard',
+        to: '/vendor/dashboard',
+        disabled: false,
+      };
+    }
+
+    if (user?.role === 'admin') {
+      return {
+        title: 'Return to platform control.',
+        copy: 'Open the admin console to review accounts, watch order activity, and maintain marketplace trust.',
+        ctaLabel: 'Open Admin Panel',
+        to: '/admin',
+        disabled: false,
+      };
+    }
+
+    return {
+      title: 'Continue your Scrapay journey.',
+      copy: 'Go back to your dashboard to book a pickup, track your requests, and work with verified vendors.',
+      ctaLabel: 'Go to Dashboard',
+      to: '/user/dashboard',
+      disabled: false,
+    };
+  })();
+
   return (
     <section className="relative overflow-hidden bg-[#120c0a] text-white">
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_12%_16%,rgba(245,158,11,0.22),transparent_26%),radial-gradient(circle_at_82%_18%,rgba(199,88,29,0.17),transparent_22%),linear-gradient(135deg,#120c0a_0%,#25160f_34%,#4a2a18_100%)]" />
@@ -99,16 +152,21 @@ const About = () => {
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
               <p className="text-xs uppercase tracking-[0.35em] text-[#d8b48c]">Next Step</p>
-              <h2 className="mt-2 text-3xl font-black text-[#f8e8d1]">Move from story to signup.</h2>
+              <h2 className="mt-2 text-3xl font-black text-[#f8e8d1]">{nextStepConfig.title}</h2>
               <p className="mt-3 max-w-2xl text-sm leading-7 text-[#e0cab3]">
-                Choose the role that fits you and enter the Scrapay flow as a user, vendor, or future platform operator.
+                {nextStepConfig.copy}
               </p>
             </div>
             <Link
-              to="/register"
-              className="inline-flex items-center gap-2 rounded-2xl bg-[linear-gradient(90deg,#f97316,#f59e0b)] px-6 py-3 text-sm font-bold text-[#2f1a10] shadow-[0_16px_40px_rgba(249,115,22,0.35)] transition hover:brightness-105"
+              to={nextStepConfig.to}
+              aria-disabled={nextStepConfig.disabled}
+              className={`inline-flex items-center gap-2 rounded-2xl px-6 py-3 text-sm font-bold text-[#2f1a10] shadow-[0_16px_40px_rgba(249,115,22,0.35)] transition ${
+                nextStepConfig.disabled
+                  ? 'pointer-events-none bg-white/20 text-white/70'
+                  : 'bg-[linear-gradient(90deg,#f97316,#f59e0b)] hover:brightness-105'
+              }`}
             >
-              Choose Your Role <ArrowRight className="h-4 w-4" />
+              {nextStepConfig.ctaLabel} <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
         </motion.div>

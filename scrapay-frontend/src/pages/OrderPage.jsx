@@ -87,13 +87,29 @@ const OrderPage = () => {
         <p className="mt-1 text-sm text-orange-200">Status: {order.status}</p>
         <p className="mt-4 text-sm text-orange-100">Pickup: {new Date(order.pickup_datetime).toLocaleString()}</p>
         <p className="mt-2 text-sm text-orange-100">Address: {order.address}</p>
+        {order.pickup_person_name && (
+          <div className="mt-4 rounded-md bg-[#4A2F20] p-4 text-sm text-orange-100">
+            <p className="font-semibold text-orange-200">Approved Pickup Details</p>
+            <p className="mt-2">Pickup Person: {order.pickup_person_name}</p>
+            {order.pickup_person_contact && <p>Contact: {order.pickup_person_contact}</p>}
+            {order.approved_at && <p>Approved At: {new Date(order.approved_at).toLocaleString()}</p>}
+          </div>
+        )}
 
         <div className="mt-6">
           <h2 className="mb-2 text-lg font-semibold text-orange-100">Items</h2>
           <ul className="space-y-2">
             {order.items.map((item) => (
               <li key={item.id} className="rounded-md bg-[#4A2F20] p-3 text-sm">
-                {item.category_name}: {item.quantity_kg} kg
+                <p>{item.category_name}: {item.quantity_kg} kg</p>
+                {item.note && <p className="mt-1 text-orange-200">Note: {item.note}</p>}
+                {item.image_url && (
+                  <img
+                    src={item.image_url}
+                    alt={`${item.category_name} scrap`}
+                    className="mt-3 h-32 w-full rounded-md object-cover md:w-56"
+                  />
+                )}
               </li>
             ))}
           </ul>

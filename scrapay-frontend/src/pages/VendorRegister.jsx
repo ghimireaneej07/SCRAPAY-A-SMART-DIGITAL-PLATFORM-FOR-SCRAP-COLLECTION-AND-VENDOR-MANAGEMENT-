@@ -2,6 +2,7 @@ import { motion } from 'framer-motion';
 import { ArrowLeft, BriefcaseBusiness, Chrome, FileCheck, Truck } from 'lucide-react';
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../hooks/useAuth.js';
 import { authService } from '../services/authService.js';
 
 const inputClass =
@@ -27,6 +28,7 @@ const vendorStory = [
 
 const VendorRegister = () => {
   const navigate = useNavigate();
+  const { login } = useAuth();
   const [form, setForm] = useState({
     username: '',
     full_name: '',
@@ -42,34 +44,58 @@ const VendorRegister = () => {
     service_radius_km: '10',
   });
   const [status, setStatus] = useState({ error: '', success: '' });
+  const [otpRequested, setOtpRequested] = useState(false);
+  const [otpCode, setOtpCode] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
   const handleChange = (event) => {
     const { name, value } = event.target;
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
+  const requestVendorOtp = async () => {
+    const otpResponse = await authService.requestOtp({
+      purpose: 'register_vendor',
+      username: form.username,
+      email: form.email,
+      phone: form.phone,
+      password: form.password,
+      full_name: form.full_name,
+      business_name: form.business_name,
+      address: form.address,
+      city: form.city,
+      state: form.state,
+      pincode: form.pincode,
+      license_number: form.license_number,
+      service_radius_km: form.service_radius_km,
+    });
+    setOtpRequested(true);
+    setStatus({
+      error: '',
+      success: otpResponse.detail || 'OTP sent to your email. Verify it to create your vendor account.',
+    });
+  };
+
   const handleSubmit = async (event) => {
     event.preventDefault();
     setStatus({ error: '', success: '' });
     try {
-      await authService.registerVendor({
-        username: form.username,
+      setSubmitting(true);
+      if (!otpRequested) {
+        await requestVendorOtp();
+        return;
+      }
+      const session = await authService.verifyOtp({
+        purpose: 'register_vendor',
         email: form.email,
-        phone: form.phone,
-        password: form.password,
-        full_name: form.full_name,
-        business_name: form.business_name,
-        address: form.address,
-        city: form.city,
-        state: form.state,
-        pincode: form.pincode,
-        license_number: form.license_number,
-        service_radius_km: form.service_radius_km,
+        otp: otpCode,
       });
-      setStatus({ error: '', success: 'Registration successful. Please sign in.' });
-      navigate('/login');
+      login(session.user);
+      navigate('/vendor/dashboard');
     } catch (err) {
       setStatus({ error: err.message || 'Registration failed.', success: '' });
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -140,7 +166,7 @@ const VendorRegister = () => {
             <div>
               <p className="text-xs uppercase tracking-[0.35em] text-[#a88d75]">Create vendor account</p>
               <h2 className="mt-2 text-4xl font-black text-[#f8e8d1]">Sign up as Vendor</h2>
-              <p className="mt-2 text-sm text-[#cbb199]">Register the business and its operating contact in one flow.</p>
+              <p className="mt-2 text-sm text-[#cbb199]">Register the business, then verify your email OTP to activate access.</p>
             </div>
             <Link to="/register" className="rounded-full border border-white/10 px-4 py-2 text-sm font-semibold text-[#f1dcc1] transition hover:bg-white/5">
               Change role
@@ -161,52 +187,68 @@ const VendorRegister = () => {
           <form onSubmit={handleSubmit} className="mt-6 grid gap-4 md:grid-cols-2">
             <div>
               <label className="mb-2 block text-sm font-semibold text-[#f3e1c9]">Username</label>
-              <input type="text" name="username" required value={form.username} onChange={handleChange} className={inputClass} />
+              <input type="text" name="username" required value={form.username} onChange={handleChange} className={inputClass} disabled={otpRequested} />
             </div>
             <div>
               <label className="mb-2 block text-sm font-semibold text-[#f3e1c9]">Owner / Contact Name</label>
-              <input type="text" name="full_name" required value={form.full_name} onChange={handleChange} className={inputClass} />
+              <input type="text" name="full_name" required value={form.full_name} onChange={handleChange} className={inputClass} disabled={otpRequested} />
             </div>
             <div>
               <label className="mb-2 block text-sm font-semibold text-[#f3e1c9]">Business Name</label>
-              <input type="text" name="business_name" required value={form.business_name} onChange={handleChange} className={inputClass} />
+              <input type="text" name="business_name" required value={form.business_name} onChange={handleChange} className={inputClass} disabled={otpRequested} />
             </div>
             <div>
               <label className="mb-2 block text-sm font-semibold text-[#f3e1c9]">License Number</label>
-              <input type="text" name="license_number" value={form.license_number} onChange={handleChange} className={inputClass} />
+              <input type="text" name="license_number" value={form.license_number} onChange={handleChange} className={inputClass} disabled={otpRequested} />
             </div>
             <div>
               <label className="mb-2 block text-sm font-semibold text-[#f3e1c9]">Phone</label>
-              <input type="tel" name="phone" required value={form.phone} onChange={handleChange} className={inputClass} />
+              <input type="tel" name="phone" required value={form.phone} onChange={handleChange} className={inputClass} disabled={otpRequested} />
             </div>
             <div>
               <label className="mb-2 block text-sm font-semibold text-[#f3e1c9]">Email</label>
-              <input type="email" name="email" required value={form.email} onChange={handleChange} className={inputClass} />
+              <input type="email" name="email" required value={form.email} onChange={handleChange} className={inputClass} disabled={otpRequested} />
             </div>
             <div>
               <label className="mb-2 block text-sm font-semibold text-[#f3e1c9]">Password</label>
-              <input type="password" name="password" required value={form.password} onChange={handleChange} className={inputClass} />
+              <input type="password" name="password" required value={form.password} onChange={handleChange} className={inputClass} disabled={otpRequested} />
             </div>
             <div>
               <label className="mb-2 block text-sm font-semibold text-[#f3e1c9]">Service Radius (km)</label>
-              <input type="number" min="1" name="service_radius_km" value={form.service_radius_km} onChange={handleChange} className={inputClass} />
+              <input type="number" min="1" name="service_radius_km" value={form.service_radius_km} onChange={handleChange} className={inputClass} disabled={otpRequested} />
             </div>
             <div className="md:col-span-2">
               <label className="mb-2 block text-sm font-semibold text-[#f3e1c9]">Business Address</label>
-              <input type="text" name="address" required value={form.address} onChange={handleChange} className={inputClass} />
+              <input type="text" name="address" required value={form.address} onChange={handleChange} className={inputClass} disabled={otpRequested} />
             </div>
             <div>
               <label className="mb-2 block text-sm font-semibold text-[#f3e1c9]">City</label>
-              <input type="text" name="city" value={form.city} onChange={handleChange} className={inputClass} />
+              <input type="text" name="city" value={form.city} onChange={handleChange} className={inputClass} disabled={otpRequested} />
             </div>
             <div>
               <label className="mb-2 block text-sm font-semibold text-[#f3e1c9]">State</label>
-              <input type="text" name="state" value={form.state} onChange={handleChange} className={inputClass} />
+              <input type="text" name="state" value={form.state} onChange={handleChange} className={inputClass} disabled={otpRequested} />
             </div>
             <div className="md:col-span-2">
               <label className="mb-2 block text-sm font-semibold text-[#f3e1c9]">Pincode</label>
-              <input type="text" name="pincode" value={form.pincode} onChange={handleChange} className={inputClass} />
+              <input type="text" name="pincode" value={form.pincode} onChange={handleChange} className={inputClass} disabled={otpRequested} />
             </div>
+
+            {otpRequested && (
+              <div className="md:col-span-2">
+                <label className="mb-2 block text-sm font-semibold text-[#f3e1c9]">Email OTP</label>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  maxLength="6"
+                  value={otpCode}
+                  onChange={(event) => setOtpCode(event.target.value)}
+                  className={inputClass}
+                  placeholder="Enter the 6-digit OTP from your email"
+                  required
+                />
+              </div>
+            )}
 
             <div className="md:col-span-2">
               {status.error && <p className="rounded-2xl border border-red-400/20 bg-red-500/10 px-4 py-3 text-sm text-red-200">{status.error}</p>}
@@ -215,12 +257,48 @@ const VendorRegister = () => {
 
             <div className="md:col-span-2 flex flex-col gap-3 border-t border-white/8 pt-5 sm:flex-row sm:items-center sm:justify-between">
               <p className="text-xs leading-6 text-[#9e846d]">These details seed your vendor identity, service scope, and admin verification workflow.</p>
-              <button
-                type="submit"
-                className="rounded-2xl bg-[linear-gradient(90deg,#f97316,#f59e0b)] px-8 py-3 text-sm font-bold text-[#2f1a10] shadow-[0_16px_40px_rgba(249,115,22,0.35)] transition hover:brightness-105"
-              >
-                Create Vendor Account
-              </button>
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="rounded-2xl bg-[linear-gradient(90deg,#f97316,#f59e0b)] px-8 py-3 text-sm font-bold text-[#2f1a10] shadow-[0_16px_40px_rgba(249,115,22,0.35)] transition hover:brightness-105 disabled:opacity-70"
+                >
+                  {submitting ? 'Please wait...' : otpRequested ? 'Verify OTP and Create Account' : 'Send OTP to Continue'}
+                </button>
+                {otpRequested && (
+                  <button
+                    type="button"
+                    disabled={submitting}
+                    onClick={async () => {
+                      setStatus({ error: '', success: '' });
+                      try {
+                        setSubmitting(true);
+                        await requestVendorOtp();
+                      } catch (err) {
+                        setStatus({ error: err.message || 'Unable to resend OTP.', success: '' });
+                      } finally {
+                        setSubmitting(false);
+                      }
+                    }}
+                    className="rounded-2xl border border-amber-300/20 bg-white/[0.04] px-6 py-3 text-sm font-semibold text-[#f6d6a4] transition hover:bg-white/10 disabled:opacity-70"
+                  >
+                    Resend OTP
+                  </button>
+                )}
+                {otpRequested && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setOtpRequested(false);
+                      setOtpCode('');
+                      setStatus({ error: '', success: '' });
+                    }}
+                    className="rounded-2xl border border-white/10 px-6 py-3 text-sm font-semibold text-[#f2dfc6] transition hover:bg-white/5"
+                  >
+                    Edit Details
+                  </button>
+                )}
+              </div>
             </div>
           </form>
         </motion.div>

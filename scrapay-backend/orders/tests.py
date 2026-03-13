@@ -1,6 +1,9 @@
 from datetime import timedelta
 
 from django.contrib.auth import get_user_model
+from django.core import mail
+from django.core.files.uploadedfile import SimpleUploadedFile
+from django.test import override_settings
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.test import APITestCase
@@ -92,6 +95,26 @@ class OrdersApiTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(response.data["status"], OrderStatus.PENDING)
 
+    def test_user_can_create_order_with_scrap_image(self):
+        self.client.force_authenticate(self.customer)
+        image = SimpleUploadedFile(
+            "scrap.gif",
+            b"\x47\x49\x46\x38\x39\x61\x01\x00\x01\x00\x80\x00\x00\x00\x00\x00\xff\xff\xff!"
+            b"\xf9\x04\x01\x00\x00\x00\x00,\x00\x00\x00\x00\x01\x00\x01\x00\x00\x02\x02D\x01\x00;",
+            content_type="image/gif",
+        )
+        payload = {
+            "vendor": str(self.vendor.id),
+            "pickup_datetime": (timezone.now() + timedelta(days=1)).isoformat(),
+            "address": "123 Test Street, Kolkata",
+            "customer_note": "",
+            "items": f'[{{"category_id": {self.category.id}, "quantity_kg": "5.00", "note": "metal bundle", "image_key": "item_image_0"}}]',
+            "item_image_0": image,
+        }
+        response = self.client.post("/api/orders/my/", payload, format="multipart")
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertTrue(response.data["items"][0]["image_url"])
+
     def test_user_cannot_create_order_with_duplicate_categories(self):
         self.client.force_authenticate(self.customer)
         payload = {
@@ -156,11 +179,35 @@ class OrdersApiTests(APITestCase):
         ids = [vendor["id"] for vendor in response.data]
         self.assertIn(self.vendor.id, ids)
 
+    @override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend")
+    def test_vendor_can_accept_with_pickup_details_and_email_customer(self):
+        order_id = self._create_order_for_vendor()
+
+        self.client.force_authenticate(self.vendor)
+        accept_response = self.client.patch(
+            f"/api/orders/vendor/{order_id}/accept/",
+            {
+                "pickup_person_name": "Ramesh Driver",
+                "pickup_person_contact": "9800000000",
+                "pickup_datetime": (timezone.now() + timedelta(days=2)).isoformat(),
+            },
+            format="json",
+        )
+        self.assertEqual(accept_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(accept_response.data["status"], OrderStatus.ACCEPTED)
+        self.assertEqual(accept_response.data["pickup_person_name"], "Ramesh Driver")
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertIn("Ramesh Driver", mail.outbox[0].body)
+
     def test_vendor_can_start_then_complete_order(self):
         order_id = self._create_order_for_vendor()
 
         self.client.force_authenticate(self.vendor)
-        accept_response = self.client.patch(f"/api/orders/vendor/{order_id}/accept/")
+        accept_response = self.client.patch(
+            f"/api/orders/vendor/{order_id}/accept/",
+            {"pickup_person_name": "Ramesh Driver", "pickup_person_contact": "9800000000"},
+            format="json",
+        )
         self.assertEqual(accept_response.status_code, status.HTTP_200_OK)
         self.assertEqual(accept_response.data["status"], OrderStatus.ACCEPTED)
 
@@ -183,7 +230,11 @@ class OrdersApiTests(APITestCase):
         order_id = self._create_order_for_vendor()
 
         self.client.force_authenticate(self.vendor)
-        self.client.patch(f"/api/orders/vendor/{order_id}/accept/")
+        self.client.patch(
+            f"/api/orders/vendor/{order_id}/accept/",
+            {"pickup_person_name": "Ramesh Driver", "pickup_person_contact": "9800000000"},
+            format="json",
+        )
         self.client.patch(f"/api/orders/vendor/{order_id}/start/")
         self.client.patch(f"/api/orders/vendor/{order_id}/complete/")
 

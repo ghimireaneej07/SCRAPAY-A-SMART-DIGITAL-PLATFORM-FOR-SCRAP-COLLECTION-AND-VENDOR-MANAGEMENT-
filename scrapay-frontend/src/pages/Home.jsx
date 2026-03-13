@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { ArrowRight, ShieldCheck, Sparkles, Truck } from 'lucide-react';
+import { useAuth } from '../hooks/useAuth.js';
 import scrapHero from '/assets/scrap-hero.png';
 
 const pillars = [
@@ -29,6 +30,75 @@ const steps = [
 ];
 
 const Home = () => {
+  const { user, isAuthenticated, isBootstrapping } = useAuth();
+
+  const primaryAction = (() => {
+    if (isBootstrapping) {
+      return {
+        label: 'Preparing your session',
+        to: '/about',
+        disabled: true,
+      };
+    }
+    if (!isAuthenticated) {
+      return {
+        label: 'Start With Scrapay',
+        to: '/register',
+        disabled: false,
+      };
+    }
+    if (user?.role === 'vendor') {
+      return {
+        label: 'Open Vendor Dashboard',
+        to: '/vendor/dashboard',
+        disabled: false,
+      };
+    }
+    if (user?.role === 'admin') {
+      return {
+        label: 'Open Admin Panel',
+        to: '/admin',
+        disabled: false,
+      };
+    }
+    return {
+      label: 'Go to Dashboard',
+      to: '/user/dashboard',
+      disabled: false,
+    };
+  })();
+
+  const secondaryAction = (() => {
+    if (isBootstrapping) {
+      return {
+        label: 'Learn The Story',
+        to: '/about',
+      };
+    }
+    if (!isAuthenticated) {
+      return {
+        label: 'Learn The Story',
+        to: '/about',
+      };
+    }
+    if (user?.role === 'vendor') {
+      return {
+        label: 'View Active Queue',
+        to: '/vendor/dashboard',
+      };
+    }
+    if (user?.role === 'admin') {
+      return {
+        label: 'Platform Overview',
+        to: '/about',
+      };
+    }
+    return {
+      label: 'Book A Pickup',
+      to: '/user/dashboard',
+    };
+  })();
+
   return (
     <section className="relative overflow-hidden bg-[#120c0a] text-white">
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_10%_16%,rgba(245,158,11,0.22),transparent_26%),radial-gradient(circle_at_82%_20%,rgba(199,88,29,0.18),transparent_22%),radial-gradient(circle_at_74%_76%,rgba(245,158,11,0.12),transparent_20%),linear-gradient(135deg,#120c0a_0%,#25160f_34%,#4a2a18_100%)]" />
@@ -52,16 +122,21 @@ const Home = () => {
 
             <div className="mt-8 flex flex-wrap gap-4">
               <Link
-                to="/register"
-                className="inline-flex items-center gap-2 rounded-2xl bg-[linear-gradient(90deg,#f97316,#f59e0b)] px-6 py-3 text-sm font-bold text-[#2f1a10] shadow-[0_16px_40px_rgba(249,115,22,0.35)] transition hover:brightness-105"
+                to={primaryAction.to}
+                aria-disabled={primaryAction.disabled}
+                className={`inline-flex items-center gap-2 rounded-2xl px-6 py-3 text-sm font-bold shadow-[0_16px_40px_rgba(249,115,22,0.35)] transition ${
+                  primaryAction.disabled
+                    ? 'pointer-events-none bg-white/20 text-white/70'
+                    : 'bg-[linear-gradient(90deg,#f97316,#f59e0b)] text-[#2f1a10] hover:brightness-105'
+                }`}
               >
-                Start With Scrapay <ArrowRight className="h-4 w-4" />
+                {primaryAction.label} <ArrowRight className="h-4 w-4" />
               </Link>
               <Link
-                to="/about"
+                to={secondaryAction.to}
                 className="inline-flex items-center rounded-2xl border border-white/10 bg-white/[0.04] px-6 py-3 text-sm font-semibold text-[#f3e1c9] transition hover:bg-white/[0.08]"
               >
-                Learn The Story
+                {secondaryAction.label}
               </Link>
             </div>
 

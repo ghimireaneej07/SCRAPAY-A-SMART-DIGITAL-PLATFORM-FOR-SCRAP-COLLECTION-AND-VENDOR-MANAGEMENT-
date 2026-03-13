@@ -1,7 +1,8 @@
 import { motion } from 'framer-motion';
-import { FaArrowRight } from 'react-icons/fa';
+import { ArrowRight } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import VerificationStatusCard from '../components/VerificationStatusCard';
 import { authService } from '../services/authService.js';
 import { orderService } from '../services/orderService.js';
 
@@ -12,27 +13,30 @@ const VendorDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [isOnline, setIsOnline] = useState(false);
   const [updatingAvailability, setUpdatingAvailability] = useState(false);
+  const [profile, setProfile] = useState(null);
 
   useEffect(() => {
-    const loadOrders = async () => {
+    const loadData = async () => {
       try {
-        const [data, availability] = await Promise.all([
+        const [orderData, availability, profileData] = await Promise.all([
           orderService.getVendorOrders(),
           authService.getVendorAvailability(),
+          authService.getProfile(),
         ]);
         setOrders(
-          data.filter((order) =>
+          orderData.filter((order) =>
             ['pending', 'accepted', 'in_progress'].includes(order.status),
           ),
         );
         setIsOnline(Boolean(availability.is_online));
+        setProfile(profileData);
       } catch (err) {
-        setError(err.message || 'Unable to load orders.');
+        setError(err.message || 'Unable to load dashboard data.');
       } finally {
         setLoading(false);
       }
     };
-    loadOrders();
+    loadData();
   }, []);
 
   const stats = useMemo(() => {
@@ -72,14 +76,25 @@ const VendorDashboard = () => {
         <button
           type="button"
           onClick={toggleAvailability}
-          disabled={updatingAvailability}
+          disabled={updatingAvailability || (profile && !profile.is_verified)}
           className={`rounded-full px-5 py-2 text-sm font-semibold ${
             isOnline ? 'bg-green-600 hover:bg-green-700' : 'bg-gray-600 hover:bg-gray-700'
-          } disabled:opacity-60`}
+          } disabled:opacity-60 disabled:cursor-not-allowed`}
+          title={profile && !profile.is_verified ? 'Available only for verified vendors' : ''}
         >
           {updatingAvailability ? 'Updating...' : isOnline ? 'Available for pickup' : 'Marked offline'}
         </button>
       </div>
+
+      {/* Verification Status Card */}
+      {profile && profile.verification_status && (
+        <VerificationStatusCard
+          status={profile.verification_status}
+          rejectionReason={profile.rejection_reason || ''}
+          verifiedAt={profile.verified_at}
+        />
+      )}
+
       <div className="mb-8 grid gap-4 md:grid-cols-3">
         <div className="rounded-2xl bg-[#A1623C] p-4 shadow-lg">
           <p className="text-xs uppercase text-orange-200">Open queue</p>
@@ -126,7 +141,7 @@ const VendorDashboard = () => {
                 className="rounded-full bg-orange-400 p-3 shadow transition hover:bg-orange-500"
                 aria-label={`View order from ${order.customer_name}`}
               >
-                <FaArrowRight />
+                <ArrowRight className="h-4 w-4" />
               </button>
             </div>
 

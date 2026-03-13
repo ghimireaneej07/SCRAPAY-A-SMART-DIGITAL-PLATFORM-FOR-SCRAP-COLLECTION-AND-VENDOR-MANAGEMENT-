@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
 import { authService } from '../services/authService.js';
 import { useAuth } from '../hooks/useAuth.js';
+import VerificationBadge from '../components/VerificationBadge.jsx';
 
 const Profile = () => {
   const { user, updateUser } = useAuth();
+  const [profile, setProfile] = useState(null);
   const [form, setForm] = useState({
     email: '',
     phone: '',
@@ -25,20 +27,21 @@ const Profile = () => {
   useEffect(() => {
     const load = async () => {
       try {
-        const profile = await authService.getProfile();
+        const profileData = await authService.getProfile();
+        setProfile(profileData);
         setForm({
-          email: profile.email || '',
-          phone: profile.phone || '',
-          full_name: profile.full_name || '',
-          address: profile.address || '',
-          city: profile.city || '',
-          state: profile.state || '',
-          pincode: profile.pincode || '',
-          business_name: profile.business_name || '',
-          license_number: profile.license_number || '',
-          service_radius_km: profile.service_radius_km || '',
+          email: profileData.email || '',
+          phone: profileData.phone || '',
+          full_name: profileData.full_name || '',
+          address: profileData.address || '',
+          city: profileData.city || '',
+          state: profileData.state || '',
+          pincode: profileData.pincode || '',
+          business_name: profileData.business_name || '',
+          license_number: profileData.license_number || '',
+          service_radius_km: profileData.service_radius_km || '',
         });
-        setAvatarPreview(profile.avatar_url || '');
+        setAvatarPreview(profileData.avatar_url || '');
       } catch (err) {
         setError(err.message || 'Unable to load profile.');
       }
@@ -80,7 +83,15 @@ const Profile = () => {
   return (
     <section className="min-h-screen bg-gradient-to-br from-[#8B5E3C] to-[#3E2C1C] px-4 py-8 text-white">
       <div className="mx-auto max-w-3xl rounded-xl bg-[#A1623C] p-6 shadow-lg">
-        <h1 className="text-2xl font-bold text-orange-100">My Profile</h1>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <h1 className="text-2xl font-bold text-orange-100">My Profile</h1>
+          {user?.role === 'vendor' && profile?.verification_status && (
+            <VerificationBadge 
+              status={profile.verification_status} 
+              size="md" 
+            />
+          )}
+        </div>
         {error && <p className="mt-3 text-sm text-red-300">{error}</p>}
         {message && <p className="mt-3 text-sm text-green-300">{message}</p>}
 

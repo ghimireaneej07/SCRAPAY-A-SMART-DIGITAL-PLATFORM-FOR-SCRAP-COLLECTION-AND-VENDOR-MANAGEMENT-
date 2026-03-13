@@ -24,6 +24,9 @@ class Order(models.Model):
     customer_note = models.TextField(blank=True)
     total_estimated = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     total_final = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    pickup_person_name = models.CharField(max_length=255, blank=True)
+    pickup_person_contact = models.CharField(max_length=30, blank=True)
+    approved_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -40,6 +43,7 @@ class OrderItem(models.Model):
     quantity_kg = models.DecimalField(max_digits=10, decimal_places=2)
     note = models.TextField(blank=True)
     image_url = models.URLField(blank=True)
+    image = models.ImageField(upload_to="order_items/", blank=True, null=True)
 
     def __str__(self):
         return f"Item {self.category.name} for order {self.order_id}"

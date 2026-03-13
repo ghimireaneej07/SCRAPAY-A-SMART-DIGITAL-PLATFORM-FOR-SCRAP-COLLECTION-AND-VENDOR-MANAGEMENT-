@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppFlow } from '../hooks/useAppFlow.js';
 import { orderService } from '../services/orderService.js';
+import VerificationBadge from '../components/VerificationBadge.jsx';
 
 const cardVariants = {
   hidden: { opacity: 0, scale: 0.95, y: 20 },
@@ -118,16 +119,21 @@ const SelectVendor = () => {
               layout
               className="flex flex-col gap-4 rounded-xl bg-[#A1623C] p-6 text-white shadow-md transition-all hover:bg-[#b77546] hover:shadow-xl md:flex-row md:items-center"
             >
-              <div>
-                <h2 className="text-2xl font-bold">{vendor.business_name || vendor.username}</h2>
-                <p className="mt-1 text-sm text-orange-200">Rating {vendor.rating_avg}</p>
-                <p className="mt-1 text-sm text-orange-200">Service radius {vendor.service_radius_km} km</p>
+              <div className="flex-1">
+                <div className="flex items-center gap-3 flex-wrap">
+                  <h2 className="text-2xl font-bold">{vendor.business_name || vendor.username}</h2>
+                  {vendor.is_verified && (
+                    <VerificationBadge status="approved" size="sm" />
+                  )}
+                </div>
+                <p className="mt-2 text-sm text-orange-200">⭐ Rating {vendor.rating_avg}/5</p>
+                <p className="mt-1 text-sm text-orange-200">📍 Service radius {vendor.service_radius_km} km</p>
                 {vendor.license_number && (
-                  <p className="mt-1 text-sm text-orange-200">License {vendor.license_number}</p>
+                  <p className="mt-1 text-sm text-orange-200">📄 License {vendor.license_number}</p>
                 )}
-              </div>
-              <div className="flex-1 text-sm italic leading-relaxed text-orange-100">
-                {vendor.is_verified ? 'Verified vendor' : 'Verification pending'} • {vendor.is_online ? 'Online' : 'Offline'}
+                <p className="mt-2 text-xs text-orange-200/80">
+                  {vendor.is_online ? '🟢 Online' : '⚪ Offline'}
+                </p>
               </div>
               <motion.button
                 onClick={() => handleSelect(vendor)}

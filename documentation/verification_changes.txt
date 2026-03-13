@@ -1,0 +1,318 @@
+# Scrapay Vendor Verification प्रणाली - नेपालीमा व्याख्या
+
+## सामान्य परिचय
+
+Scrapay प्लेटफर्ममा नयाँ **Vendor Verification (विक्रेता प्रमाणीकरण)** सुविधा थपिएको छ। यो सुविधाले प्लेटफर्मको सुरक्षा र विश्वसनीयता बढाउँछ।
+
+---
+
+## Vendor Verification किन महत्त्वपूर्ण छ?
+
+### ग्राहकहरूका लागि (Users):
+- ✅ **सुरक्षा**: प्रमाणित विक्रेताले मात्र सेवा दिन्छन्
+- ✅ **विश्वास**: Admin ले जाँच गरिसकेको विक्रेता
+- ✅ **गुणस्तर**: उच्च गुणस्तरको सेवा सुनिश्चित
+
+### विक्रेताहरूका लागि (Vendors):
+- ✅ **विश्वसनीयता**: Verified badge ले ग्राहकको विश्वास बढाउँछ
+- ✅ **प्रतिस्पर्धा**: अरू प्रमाणित विक्रेताहरूसँग प्रतिस्पर्धा
+- ✅ **पहुँच**: ग्राहकको order प्राप्त गर्न सकिन्छ
+
+### प्लेटफर्मका लागि:
+- ✅ **गुणस्तर नियन्त्रण**: खराब विक्रेता रोकिन्छ
+- ✅ **ब्रान्ड सुरक्षा**: Scrapay को नाम सुरक्षित रहन्छ
+- ✅ **कानुनी सुरक्षा**: सबै विक्रेता प्रमाणित
+
+---
+
+## नयाँ विक्रेता भर्ना हुँदा के हुन्छ?
+
+### Step 1: दर्ता (Registration)
+1. विक्रेताले Scrapay मा account बनाउँछ
+2. Email, phone, business name भर्छ
+3. OTP code पठाइन्छ र verify गर्छ
+
+### Step 2: Pending Status
+- दर्ता भएपछि स्वचालित रूपमा status: **"Verification Pending"** हुन्छ
+- विक्रेताले login गर्न सक्छ
+- Profile पूरा गर्न सक्छ
+- तर **order receive गर्न सक्दैन**
+
+### Step 3: Dashboard मा Message
+Vendor Dashboard मा पहेँलो रङ्गको card देखिन्छ:
+
+```
+⏳ Verification in Progress
+
+Your account is currently under verification. 
+You cannot receive pickup requests until admin approval. 
+This usually takes 24-48 hours.
+
+🟡 VERIFICATION PENDING
+```
+
+**मतलब:**
+- Admin ले तपाईंको account जाँच गर्दैछ
+- 1-2 दिन कुर्नुहोस्
+- यस बीचमा profile पूरा गर्नुहोस्
+
+---
+
+## Admin ले कसरी Approve/Reject गर्छ?
+
+### Admin Panel मा Vendors Section
+
+Admin ले यी जानकारी देख्छ:
+- विक्रेताको नाम
+- Email र Phone
+- Business Name
+- Location (City)
+- Registration मिति
+- हालको Verification Status
+
+### Approve गर्दा:
+
+1. Admin ले **"Approve"** button थिच्छ
+2. Backend मा यी परिवर्तन हुन्छ:
+   - `is_verified = True`
+   - `verification_status = "approved"`
+   - `verified_at = आजको मिति र समय`
+
+3. विक्रेतालाई email जान्छ:
+```
+Subject: Vendor Account Approved - Scrapay
+
+Dear [Vendor Name],
+
+Congratulations! Your Scrapay vendor account has been successfully verified.
+
+Business Name: [Your Business]
+
+You can now:
+✓ Receive scrap pickup requests from customers
+✓ Accept and manage orders through your dashboard
+✓ Build your reputation on the platform
+
+Thank you for joining Scrapay!
+```
+
+4. Vendor Dashboard मा हरियो card देखिन्छ:
+```
+🎉 Account Verified
+
+Your vendor account has been successfully verified.
+You can now receive and manage scrap pickup requests from customers.
+
+✓ VERIFIED VENDOR
+Verified on March 13, 2026
+```
+
+### Reject गर्दा:
+
+1. Admin ले **"Reject"** button थिच्छ
+2. कारण (rejection reason) लेख्छ
+   - उदाहरण: "Business license valid छैन"
+   - उदाहरण: "Address verification गर्न सकिएन"
+
+3. Backend मा यी परिवर्तन हुन्छ:
+   - `is_verified = False`
+   - `verification_status = "rejected"`
+   - `rejection_reason = "Admin ले लेखेको कारण"`
+
+4. विक्रेतालाई email जान्छ:
+```
+Subject: Vendor Account Verification Update - Scrapay
+
+Dear [Vendor Name],
+
+After reviewing your application, we are unable to approve 
+your vendor account at this time.
+
+Business Name: [Your Business]
+Reason: [Adminले लेखेको कारण]
+
+If you believe this decision was made in error or would like to 
+reapply with updated information, please contact our support team.
+```
+
+5. Vendor Dashboard मा रातो card देखिन्छ:
+```
+⚠️ Verification Rejected
+
+Your verification request was not approved. 
+Please contact support for more information.
+
+✕ VERIFICATION REJECTED
+
+───────────────────────────────
+Reason: Business license valid छैन
+───────────────────────────────
+```
+
+---
+
+## Frontend मा Verification Status कसरी देखिन्छ?
+
+### 1. Vendor Dashboard (मुख्य पाना)
+
+**Pending (पर्खाइमा):**
+- 🟡 पहेँलो रङ्गको card
+- "Verification in Progress" message
+- "Available for pickup" button disabled
+
+**Approved (स्वीकृत):**
+- 🟢 हरियो रङ्गको card
+- "Account Verified" message
+- Verified मिति देखिन्छ
+- सबै features उपलब्ध
+
+**Rejected (अस्वीकृत):**
+- 🔴 रातो रङ्गको card
+- "Verification Rejected" message
+- कारण देखिन्छ
+- Order receive गर्न सकिँदैन
+
+### 2. Vendor Profile Page
+
+**Verified Badge:**
+```
+✓ Verified Vendor
+```
+- हरियो रङ्गको badge
+- विक्रेताको नाम मुनि देखिन्छ
+
+### 3. Customer ले Vendor Select गर्दा
+
+Vendor Directory मा:
+- केवल **verified vendors** मात्र देखिन्छ
+- प्रत्येकमा हरियो ✓ badge
+- Unverified vendors लुकेका हुन्छन्
+
+### 4. Order Details मा
+
+विक्रेताको नाम मुनि:
+```
+Vendor: Ram Scrap Collection ✓ Verified Vendor
+```
+
+---
+
+## Technical Details (प्राविधिक विवरण)
+
+### Database मा नयाँ Fields:
+
+```python
+VendorProfile:
+  - verification_status: "pending" / "approved" / "rejected"
+  - rejection_reason: "कारण text"
+  - verified_at: "स्वीकृत मिति र समय"
+```
+
+### Order Assignment Rule:
+
+```
+IF vendor.is_verified == False THEN
+    order assign हुँदैन
+    error message: "Selected vendor is not verified"
+```
+
+### Vendor Directory Filter:
+
+```
+SELECT * FROM vendors 
+WHERE is_active = True 
+AND is_verified = True
+```
+
+---
+
+## सामान्य प्रश्नहरू (FAQs)
+
+### Q1: नयाँ vendor ले कति समय कुर्नुपर्छ?
+**उत्तर:** सामान्यतया 24-48 घण्टा। Admin ले documents जाँच गर्न समय चाहिन्छ।
+
+### Q2: Reject भएपछि के गर्ने?
+**उत्तर:**
+- Email मा दिइएको कारण पढ्नुहोस्
+- Documents सच्याउनुहोस्
+- Support team लाई सम्पर्क गर्नुहोस्
+- फेरि apply गर्न सक्नुहुन्छ
+
+### Q3: Pending हुँदा के गर्न सकिन्छ?
+**उत्तर:**
+- Login गर्न सकिन्छ
+- Profile पूरा गर्न सकिन्छ
+- Dashboard हेर्न सकिन्छ
+- तर order receive गर्न सकिँदैन
+
+### Q4: Approved पछि के हुन्छ?
+**उत्तर:**
+- सबै features खुल्छ
+- "Available for pickup" toggle गर्न सकिन्छ
+- Customer को order receive हुन थाल्छ
+- Verified badge देखिन्छ
+
+### Q5: Customer ले कसरी थाहा पाउँछ vendor verified छ?
+**उत्तर:**
+- हरियो ✓ Verified Vendor badge देखिन्छ
+- Vendor selection मा मात्र verified देखिन्छ
+- Order details मा पनि badge हुन्छ
+
+---
+
+## सुरक्षा र गोपनीयता
+
+### विक्रेता जानकारी सुरक्षा:
+- ✅ सबै data encrypted छ
+- ✅ Admin ले मात्र verification access छ
+- ✅ Email SMTP secure छ (Brevo)
+- ✅ Password hashed छ (plaintext होइन)
+
+### Admin को जिम्मेवारी:
+- विक्रेताको documents राम्रोसँग जाँच गर्ने
+- valid business license छ कि भनेर हेर्ने
+- Location र contact verify गर्ने
+- समयमै approve/reject गर्ने
+
+---
+
+## सारांश
+
+### यो सुविधाले के फाइदा दिन्छ?
+
+**ग्राहकलाई:**
+- ✓ सुरक्षित सेवा
+- ✓ प्रमाणित विक्रेता
+- ✓ विश्वसनीयता
+
+**विक्रेतालाई:**
+- ✓ Brand credibility
+- ✓ ग्राहकको विश्वास
+- ✓ Platform support
+
+**Scrapay Platform लाई:**
+- ✓ गुणस्तर नियन्त्रण
+- ✓ कानुनी सुरक्षा
+- ✓ ब्रान्ड सुरक्षा
+
+---
+
+## अन्त्यमा
+
+Vendor Verification प्रणाली Scrapay को मुख्य सुरक्षा feature हो। यसले:
+- सबै विक्रेताहरू प्रमाणित हुन्छन्
+- ग्राहकहरू सुरक्षित महसुस गर्छन्
+- प्लेटफर्मको गुणस्तर बढ्छ
+
+**नयाँ विक्रेताहरूलाई सन्देश:**
+- धैर्य राख्नुहोस्, verification केही समय लाग्छ
+- आफ्नो profile राम्रोसँग भर्नुहोस्
+- सही documents दिनुहोस्
+- Admin को निर्णय कुर्नुहोस्
+
+**Scrapay टीम तपाईंलाई सफल vendor बन्न मद्दत गर्न तयार छ!**
+
+---
+
+धन्यवाद!  
+Scrapay Development Team

@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { ArrowLeft, Chrome, LockKeyhole, ShieldCheck, Sparkles, Truck } from 'lucide-react';
+import { ArrowLeft, Chrome, KeyRound, LockKeyhole, Mail, ShieldCheck, Sparkles, Truck } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth.js';
@@ -33,28 +33,98 @@ const featureCards = [
 ];
 
 const Login = () => {
-  const [form, setForm] = useState({
-    username: '',
-    password: '',
-  });
-  const [error, setError] = useState('');
   const navigate = useNavigate();
   const { login } = useAuth();
+  const [mode, setMode] = useState('login');
+  const [loginForm, setLoginForm] = useState({ identifier: '', password: '', otp: '' });
+  const [forgotForm, setForgotForm] = useState({ email: '', otp: '', newPassword: '' });
+  const [adminOtpStep, setAdminOtpStep] = useState(false);
+  const [adminOtpEmail, setAdminOtpEmail] = useState('');
+  const [forgotOtpStep, setForgotOtpStep] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState('');
+  const [message, setMessage] = useState('');
 
-  const handleChange = (event) => {
+  const handleLoginChange = (event) => {
     const { name, value } = event.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
+    setLoginForm((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleForgotChange = (event) => {
+    const { name, value } = event.target;
+    setForgotForm((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const resetMessages = () => {
+    setError('');
+    setMessage('');
   };
 
   const handleLogin = async (event) => {
     event.preventDefault();
-    setError('');
+    resetMessages();
     try {
-      const session = await authService.login(form);
+      setSubmitting(true);
+      if (adminOtpStep) {
+        const session = await authService.verifyOtp({
+          purpose: 'admin_login',
+          email: adminOtpEmail || loginForm.identifier,
+          otp: loginForm.otp,
+        });
+        login(session.user);
+        navigate(roleRedirect[session.user.role] ?? '/');
+        return;
+      }
+
+      const session = await authService.login({
+        identifier: loginForm.identifier,
+        password: loginForm.password,
+      });
+
+      if (session.requires_otp) {
+        setAdminOtpStep(true);
+        setAdminOtpEmail(session.email || loginForm.identifier);
+        setMessage(session.detail || 'Admin OTP sent to your email. Enter it to finish login.');
+        return;
+      }
+
       login(session.user);
       navigate(roleRedirect[session.user.role] ?? '/');
     } catch (err) {
       setError(err.message || 'Unable to sign in.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleForgotPassword = async (event) => {
+    event.preventDefault();
+    resetMessages();
+    try {
+      setSubmitting(true);
+      if (!forgotOtpStep) {
+        const otpResponse = await authService.requestOtp({
+          purpose: 'password_reset',
+          email: forgotForm.email,
+        });
+        setForgotOtpStep(true);
+        setMessage(otpResponse.detail || 'Password reset OTP sent to your email.');
+        return;
+      }
+
+      await authService.resetPassword({
+        email: forgotForm.email,
+        otp: forgotForm.otp,
+        new_password: forgotForm.newPassword,
+      });
+      setMessage('Password reset successful. You can sign in now.');
+      setMode('login');
+      setForgotOtpStep(false);
+      setForgotForm({ email: '', otp: '', newPassword: '' });
+    } catch (err) {
+      setError(err.message || 'Unable to reset password.');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -87,7 +157,7 @@ const Login = () => {
               managed with clarity.
             </h1>
             <p className="mt-6 max-w-xl text-base leading-8 text-[#d7c0ab]">
-              Sign in to enter a platform designed for modern scrap operations. Household users book pickups, vendors run live queues, and admins keep the marketplace trusted.
+              User and vendor accounts sign in with password. Admin accounts require password plus email OTP. Password recovery also runs through email OTP.
             </p>
           </div>
 
@@ -121,11 +191,19 @@ const Login = () => {
         >
           <div className="flex items-center gap-4">
             <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#f59e0b]/16 text-[#ffd08a]">
-              <LockKeyhole className="h-7 w-7" />
+              {mode === 'login' ? <LockKeyhole className="h-7 w-7" /> : <KeyRound className="h-7 w-7" />}
             </div>
             <div>
-              <h2 className="text-3xl font-black text-[#f8e8d1]">Account Sign In</h2>
-              <p className="mt-1 text-sm text-[#cbb199]">Use your Scrapay credentials to continue.</p>
+              <h2 className="text-3xl font-black text-[#f8e8d1]">
+                {mode === 'login' ? 'Account Sign In' : 'Forgot Password'}
+              </h2>
+              <p className="mt-1 text-sm text-[#cbb199]">
+                {mode === 'login'
+                  ? adminOtpStep
+                    ? 'Admin accounts finish login with a one-time email code.'
+                    : 'Use your email or username with password to continue.'
+                  : 'Reset your password securely with an email OTP.'}
+              </p>
             </div>
           </div>
 
@@ -153,49 +231,187 @@ const Login = () => {
             <div className="h-px flex-1 bg-white/10" />
           </div>
 
-          <form onSubmit={handleLogin} className="space-y-4">
-            <div>
-              <label htmlFor="username" className="mb-2 block text-sm font-semibold text-[#f3e1c9]">
-                Username
-              </label>
-              <input
-                id="username"
-                name="username"
-                value={form.username}
-                onChange={handleChange}
-                className={inputClass}
-                autoComplete="username"
-                placeholder="Enter your username"
-                required
-              />
-            </div>
+          {mode === 'login' ? (
+            <form onSubmit={handleLogin} className="space-y-4">
+              <div>
+                <label htmlFor="identifier" className="mb-2 block text-sm font-semibold text-[#f3e1c9]">
+                  Email Address or Username
+                </label>
+                <div className="relative">
+                  <Mail className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#b89f88]" />
+                  <input
+                    id="identifier"
+                    name="identifier"
+                    value={loginForm.identifier}
+                    onChange={handleLoginChange}
+                    className={`${inputClass} pl-11`}
+                    autoComplete="username"
+                    placeholder="Enter your email or username"
+                    required
+                    disabled={adminOtpStep}
+                  />
+                </div>
+              </div>
 
-            <div>
-              <label htmlFor="password" className="mb-2 block text-sm font-semibold text-[#f3e1c9]">
-                Password
-              </label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                value={form.password}
-                onChange={handleChange}
-                className={inputClass}
-                autoComplete="current-password"
-                placeholder="Enter your password"
-                required
-              />
-            </div>
+              {!adminOtpStep && (
+                <div>
+                  <label htmlFor="password" className="mb-2 block text-sm font-semibold text-[#f3e1c9]">
+                    Password
+                  </label>
+                  <input
+                    id="password"
+                    name="password"
+                    type="password"
+                    value={loginForm.password}
+                    onChange={handleLoginChange}
+                    className={inputClass}
+                    autoComplete="current-password"
+                    placeholder="Enter your password"
+                    required
+                  />
+                </div>
+              )}
 
-            {error && <p className="rounded-2xl border border-red-400/20 bg-red-500/10 px-4 py-3 text-sm text-red-200">{error}</p>}
+              {adminOtpStep && (
+                <div>
+                  <label htmlFor="otp" className="mb-2 block text-sm font-semibold text-[#f3e1c9]">
+                    Admin OTP
+                  </label>
+                  <input
+                    id="otp"
+                    name="otp"
+                    inputMode="numeric"
+                    maxLength="6"
+                    value={loginForm.otp}
+                    onChange={handleLoginChange}
+                    className={inputClass}
+                    placeholder="Enter the 6-digit admin OTP"
+                    required
+                  />
+                  {adminOtpEmail && <p className="mt-2 text-xs text-[#b89f88]">OTP sent to {adminOtpEmail}</p>}
+                </div>
+              )}
 
-            <button
-              type="submit"
-              className="w-full rounded-2xl bg-[linear-gradient(90deg,#f97316,#f59e0b)] py-3 text-sm font-bold text-[#2f1a10] shadow-[0_16px_40px_rgba(249,115,22,0.35)] transition hover:brightness-105"
-            >
-              Sign In to Scrapay
-            </button>
-          </form>
+              {error && <p className="rounded-2xl border border-red-400/20 bg-red-500/10 px-4 py-3 text-sm text-red-200">{error}</p>}
+              {message && <p className="rounded-2xl border border-emerald-400/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-100">{message}</p>}
+
+              <button
+                type="submit"
+                disabled={submitting}
+                className="w-full rounded-2xl bg-[linear-gradient(90deg,#f97316,#f59e0b)] py-3 text-sm font-bold text-[#2f1a10] shadow-[0_16px_40px_rgba(249,115,22,0.35)] transition hover:brightness-105 disabled:opacity-60"
+              >
+                {submitting ? 'Please wait...' : adminOtpStep ? 'Verify Admin OTP' : 'Sign In'}
+              </button>
+
+              <div className="flex items-center justify-between gap-3 text-sm">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMode('forgot');
+                    setError('');
+                    setMessage('');
+                    setAdminOtpStep(false);
+                  }}
+                  className="text-[#f2dfc6] underline-offset-4 transition hover:text-white hover:underline"
+                >
+                  Forgot password?
+                </button>
+                {adminOtpStep && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAdminOtpStep(false);
+                      setAdminOtpEmail('');
+                      setLoginForm((prev) => ({ ...prev, otp: '' }));
+                      resetMessages();
+                    }}
+                    className="text-[#f2dfc6] underline-offset-4 transition hover:text-white hover:underline"
+                  >
+                    Back to password
+                  </button>
+                )}
+              </div>
+            </form>
+          ) : (
+            <form onSubmit={handleForgotPassword} className="space-y-4">
+              <div>
+                <label htmlFor="forgot-email" className="mb-2 block text-sm font-semibold text-[#f3e1c9]">
+                  Account Email
+                </label>
+                <input
+                  id="forgot-email"
+                  name="email"
+                  type="email"
+                  value={forgotForm.email}
+                  onChange={handleForgotChange}
+                  className={inputClass}
+                  placeholder="Enter your account email"
+                  required
+                  disabled={forgotOtpStep}
+                />
+              </div>
+
+              {forgotOtpStep && (
+                <>
+                  <div>
+                    <label htmlFor="forgot-otp" className="mb-2 block text-sm font-semibold text-[#f3e1c9]">
+                      Reset OTP
+                    </label>
+                    <input
+                      id="forgot-otp"
+                      name="otp"
+                      inputMode="numeric"
+                      maxLength="6"
+                      value={forgotForm.otp}
+                      onChange={handleForgotChange}
+                      className={inputClass}
+                      placeholder="Enter the 6-digit OTP"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="new-password" className="mb-2 block text-sm font-semibold text-[#f3e1c9]">
+                      New Password
+                    </label>
+                    <input
+                      id="new-password"
+                      name="newPassword"
+                      type="password"
+                      value={forgotForm.newPassword}
+                      onChange={handleForgotChange}
+                      className={inputClass}
+                      placeholder="Create a new password"
+                      required
+                    />
+                  </div>
+                </>
+              )}
+
+              {error && <p className="rounded-2xl border border-red-400/20 bg-red-500/10 px-4 py-3 text-sm text-red-200">{error}</p>}
+              {message && <p className="rounded-2xl border border-emerald-400/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-100">{message}</p>}
+
+              <button
+                type="submit"
+                disabled={submitting}
+                className="w-full rounded-2xl bg-[linear-gradient(90deg,#f97316,#f59e0b)] py-3 text-sm font-bold text-[#2f1a10] shadow-[0_16px_40px_rgba(249,115,22,0.35)] transition hover:brightness-105 disabled:opacity-60"
+              >
+                {submitting ? 'Please wait...' : forgotOtpStep ? 'Reset Password' : 'Send Reset OTP'}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setMode('login');
+                  setForgotOtpStep(false);
+                  setForgotForm({ email: '', otp: '', newPassword: '' });
+                  resetMessages();
+                }}
+                className="w-full rounded-2xl border border-white/10 py-3 text-sm font-semibold text-[#f2dfc6] transition hover:bg-white/5"
+              >
+                Back to Sign In
+              </button>
+            </form>
+          )}
 
           <div className="mt-7 rounded-[28px] border border-white/8 bg-white/[0.04] px-5 py-5 text-center">
             <p className="text-sm text-[#cbb199]">Do not have an account yet?</p>

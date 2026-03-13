@@ -1,0 +1,75 @@
+Scrapay Project - परिवर्तनहरू (changes.txt)
+
+1) के परिवर्तन गरियो
+- Frontend मा global font ठीक गरेर Google Fonts बाट `Poppins` लागू गरियो।
+- Signup मा email OTP verification राखियो।
+- User र vendor login लाई password-based बनाइयो।
+- Forgot password flow लाई OTP आधारित बनाइयो।
+- Admin login मा password + OTP step थपियो।
+- Backend मा OTP save गर्ने `EmailOTP` model थपियो।
+- OTP लाई hashed format मा store गर्ने र expiry time राख्ने logic बनाइयो।
+- `api/auth/otp/request` र `api/auth/otp/verify` endpoint थपियो।
+- User र vendor registration page मा OTP verify गरेपछि मात्र account activate हुने flow बनाइयो।
+- Login page मा सामान्य account का लागि email/username + password flow राखियो।
+- Admin का लागि password verify भएपछि OTP माग्ने flow बनाइयो।
+- Forgot password UI थपियो।
+- Scrap pickup request बनाउँदा scrap photo upload गर्न मिल्ने बनाइयो।
+- Backend मा order item image save गर्न `ImageField` थपियो।
+- Order details र vendor order details page मा upload गरिएको scrap photo देखिने बनाइयो।
+- Order approve गर्दा pickup person को नाम, contact, र pickup time update गर्न मिल्ने बनाइयो।
+- Order accepted हुँदा user लाई email पठाउने logic थपियो।
+- Brevo SMTP को env-based configuration backend मा राखियो।
+- `react-icons` dependency हटाइयो र बाँकी icon हरू `lucide-react` मा shift गरियो।
+- Root repo documentation update गरियो।
+
+2) किन गरियो
+- Font mismatch ले UI professional देखिएको थिएन, त्यसैले एउटै clean typography चाहिन्थ्यो।
+- Password-less OTP login/signup ले onboarding सजिलो र सुरक्षित बनाउँछ।
+- Scrap photo ले vendor लाई pickup अघि material बुझ्न मद्दत गर्छ।
+- Approval email ले user लाई pickup कहिले र कसले गर्ने हो भन्ने स्पष्ट जानकारी दिन्छ।
+- Brevo SMTP config env मा राख्दा production-ready email setup गर्न सजिलो हुन्छ।
+- Unnecessary dependency हटाउँदा project हल्का र maintain गर्न सजिलो हुन्छ।
+
+3) OTP system कसरी काम गर्छ
+- Signup गर्दा user वा vendor ले form भरेपछि OTP request हुन्छ।
+- Backend ले 6-digit OTP generate गर्छ, hash गरेर database मा save गर्छ, अनि expiry राख्छ।
+- OTP Brevo SMTP मार्फत email मा पठाइन्छ।
+- Signup verify भएपछि मात्र account create भएर JWT token issue हुन्छ।
+- Signup case मा OTP verify भएपछि मात्र user/vendor account create हुन्छ।
+- Forgot password case मा OTP verify गरेपछि मात्र नयाँ password set हुन्छ।
+- Admin login case मा password सही भएपछि OTP पठाइन्छ, अनि OTP verify गरेपछि मात्रै token दिन्छ।
+
+4) Login system कसरी काम गर्छ
+- User र vendor ले email वा username + password प्रयोग गरेर direct login गर्छन्।
+- Admin ले password हालेर पहिलो step पार गर्छ।
+- त्यसपछि admin को registered email मा OTP जान्छ।
+- OTP verify भएपछि मात्र admin session/token दिन्छ।
+
+5) Scrap image upload कसरी काम गर्छ
+- Sell Scrap page मा हरेक selected scrap item सँग photo upload field छ।
+- Frontend ले order submit गर्दा `FormData` मा image र item details पठाउँछ।
+- Backend ले image लाई `media/order_items/` भित्र save गर्छ।
+- Order details page र vendor details page मा saved image URL बाट photo देखाइन्छ।
+
+6) Pickup approval email कसरी काम गर्छ
+- Vendor ले order accept गर्दा pickup person name, optional contact, र pickup datetime पठाउन सक्छ।
+- Backend ले order status `accepted` मा update गर्छ।
+- त्यसपछि user को email मा pickup approval message automatically पठाइन्छ।
+- Email मा pickup date, time, pickup person, र contact number समावेश हुन्छ।
+
+7) Run गर्ने छोटो तरिका
+- Backend:
+  - `.\\scrapay-backend\\.env.example` copy गरेर `.\\scrapay-backend\\.env` बनाउने
+  - MySQL र Brevo credentials update गर्ने
+  - `python manage.py migrate`
+  - `python manage.py runserver`
+- Frontend:
+  - `npm --prefix .\\scrapay-frontend install`
+  - `.\\scrapay-frontend\\.env` मा `VITE_API_BASE_URL=http://localhost:8000/api` राख्ने
+  - `npm run dev`
+
+8) Check गरिएको कुरा
+- `python manage.py test accounts orders` पास भयो।
+- `python manage.py check` पास भयो।
+- `npm --prefix scrapay-frontend run lint` पास भयो।
+- `npm --prefix scrapay-frontend run build` पास भयो।

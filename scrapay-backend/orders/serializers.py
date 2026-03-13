@@ -1,12 +1,14 @@
+import json
 from decimal import Decimal
 
 from django.utils import timezone
 from rest_framework import serializers
 
-from catalog.models import MarketRate, ScrapCategory
+from catalog.models import ScrapCategory
 from accounts.models import User, UserRole
 
-from .models import Order, OrderFeedback, OrderItem, OrderStatus, OrderStatusHistory
+from .models import Order, OrderFeedback, OrderItem
+from .services import create_order_with_items
 
 
 class OrderItemWriteSerializer(serializers.Serializer):
@@ -14,6 +16,7 @@ class OrderItemWriteSerializer(serializers.Serializer):
     quantity_kg = serializers.DecimalField(max_digits=10, decimal_places=2)
     note = serializers.CharField(required=False, allow_blank=True)
     image_url = serializers.URLField(required=False, allow_blank=True)
+    image_key = serializers.CharField(required=False, allow_blank=True)
 
     def validate_category_id(self, value):
         category = ScrapCategory.objects.filter(id=value, is_active=True).first()
@@ -64,37 +67,36 @@ class OrderCreateSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Pickup date and time must be in the future.")
         return value
 
+    def to_internal_value(self, data):
+        if hasattr(data, "getlist") and isinstance(data.get("items"), str):
+            data = {
+                "vendor": data.get("vendor"),
+                "pickup_datetime": data.get("pickup_datetime"),
+                "address": data.get("address"),
+                "customer_note": data.get("customer_note", ""),
+                "items": json.loads(data.get("items")),
+            }
+        return super().to_internal_value(data)
+
     def create(self, validated_data):
-        items = validated_data.pop("items")
         customer = self.context["request"].user
-
-        order = Order.objects.create(customer=customer, **validated_data)
-        estimated_total = Decimal("0.00")
-
-        for item in items:
-            order_item = OrderItem.objects.create(
-                order=order,
-                category_id=item["category_id"],
-                quantity_kg=item["quantity_kg"],
-                note=item.get("note", ""),
-                image_url=item.get("image_url", ""),
-            )
-            latest_rate = (
-                MarketRate.objects.filter(category_id=order_item.category_id, is_active=True)
-                .order_by("-effective_from", "-id")
-                .first()
-            )
-            if latest_rate:
-                estimated_total += latest_rate.price_per_kg * order_item.quantity_kg
-
-        order.total_estimated = estimated_total
-        order.save(update_fields=["total_estimated", "updated_at"])
-        OrderStatusHistory.objects.create(order=order, from_status="", to_status=OrderStatus.PENDING, changed_by=customer)
-        return order
+        return create_order_with_items(
+            customer=customer,
+            validated_data=validated_data,
+            files=self.context["request"].FILES,
+        )
 
 
 class OrderItemReadSerializer(serializers.ModelSerializer):
     category_name = serializers.CharField(source="category.name", read_only=True)
+    image_url = serializers.SerializerMethodField()
+
+    def get_image_url(self, obj):
+        request = self.context.get("request")
+        if obj.image:
+            url = obj.image.url
+            return request.build_absolute_uri(url) if request else url
+        return obj.image_url
 
     class Meta:
         model = OrderItem
@@ -105,6 +107,7 @@ class OrderReadSerializer(serializers.ModelSerializer):
     items = OrderItemReadSerializer(many=True, read_only=True)
     customer_name = serializers.CharField(source="customer.username", read_only=True)
     vendor_name = serializers.CharField(source="vendor.username", read_only=True)
+    vendor_is_verified = serializers.BooleanField(source="vendor.vendor_profile.is_verified", default=False, read_only=True)
     feedback = serializers.SerializerMethodField()
 
     def get_feedback(self, obj):
@@ -126,12 +129,16 @@ class OrderReadSerializer(serializers.ModelSerializer):
             "customer_name",
             "vendor",
             "vendor_name",
+            "vendor_is_verified",
             "status",
             "pickup_datetime",
             "address",
             "customer_note",
             "total_estimated",
             "total_final",
+            "pickup_person_name",
+            "pickup_person_contact",
+            "approved_at",
             "created_at",
             "updated_at",
             "items",
@@ -143,6 +150,17 @@ class OrderFeedbackWriteSerializer(serializers.ModelSerializer):
     class Meta:
         model = OrderFeedback
         fields = ("rating", "review")
+
+
+class OrderApprovalSerializer(serializers.Serializer):
+    pickup_person_name = serializers.CharField(max_length=255)
+    pickup_person_contact = serializers.CharField(required=False, allow_blank=True, max_length=30)
+    pickup_datetime = serializers.DateTimeField(required=False)
+
+    def validate_pickup_datetime(self, value):
+        if value <= timezone.now():
+            raise serializers.ValidationError("Pickup date and time must be in the future.")
+        return value
 
 
 class VendorDirectorySerializer(serializers.ModelSerializer):

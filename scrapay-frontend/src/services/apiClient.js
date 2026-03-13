@@ -1,4 +1,25 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
+const normalizeBaseUrl = (baseUrl) => baseUrl.replace(/\/+$/, '');
+
+const resolveApiBaseUrl = () => {
+  const configuredBaseUrl = import.meta.env.VITE_API_BASE_URL?.trim();
+  if (configuredBaseUrl) {
+    return normalizeBaseUrl(configuredBaseUrl);
+  }
+
+  if (typeof window === 'undefined') {
+    return 'http://localhost:8000/api';
+  }
+
+  const { hostname, origin, protocol } = window.location;
+  if (hostname === 'localhost' || hostname === '127.0.0.1') {
+    return `${protocol}//${hostname}:8000/api`;
+  }
+
+  return `${origin}/api`;
+};
+
+export const API_BASE_URL = resolveApiBaseUrl();
+export const WS_BASE_URL = API_BASE_URL.replace(/^http/i, 'ws').replace(/\/api\/?$/, '');
 
 const ACCESS_KEY = 'scrapay_access_token';
 const REFRESH_KEY = 'scrapay_refresh_token';
@@ -56,12 +77,19 @@ export const apiRequest = async (path, options = {}, retry = true) => {
   }
 
   if (!response.ok) {
-    let detail = 'Request failed';
+    let detail = `Request failed (${response.status})`;
     try {
       const err = await response.json();
       detail = err.detail || JSON.stringify(err);
     } catch {
-      // Keep fallback detail.
+      try {
+        const text = (await response.text()).trim();
+        if (text) {
+          detail = text.length > 300 ? `${text.slice(0, 300)}...` : text;
+        }
+      } catch {
+        // Keep fallback detail.
+      }
     }
     throw new Error(detail);
   }

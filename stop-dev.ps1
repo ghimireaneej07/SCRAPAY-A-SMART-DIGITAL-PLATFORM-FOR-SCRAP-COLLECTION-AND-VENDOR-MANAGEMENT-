@@ -10,13 +10,13 @@ if (-not (Test-Path $pidFile)) {
 $state = Get-Content $pidFile | ConvertFrom-Json
 $pids = @($state.backend_pid, $state.frontend_pid) | Where-Object { $_ }
 
-foreach ($pid in $pids) {
-    $proc = Get-Process -Id $pid -ErrorAction SilentlyContinue
+foreach ($p in $pids) {
+    $proc = Get-Process -Id $p -ErrorAction SilentlyContinue
     if ($proc) {
-        Write-Host "Stopping PID $pid ($($proc.ProcessName))"
-        Stop-Process -Id $pid -Force
+        Write-Host "Stopping PID $p ($($proc.ProcessName))"
+        Stop-Process -Id $p -Force
     } else {
-        Write-Host "PID $pid is not running."
+        Write-Host "PID $p is not running."
     }
 }
 

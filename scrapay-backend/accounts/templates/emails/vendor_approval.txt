@@ -1,0 +1,18 @@
+Dear {{ vendor_name }},
+
+Congratulations! Your {{ project_name }} vendor account has been successfully verified.
+
+Business Name: {{ business_name }}
+
+You can now:
+✓ Receive scrap pickup requests from customers
+✓ Accept and manage orders through your dashboard
+✓ Build your reputation on the platform
+
+Thank you for joining {{ project_name }}. We look forward to a successful partnership!
+
+Best regards,
+The {{ project_name }} Team
+
+---
+This is an automated message. Please do not reply to this email.

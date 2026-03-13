@@ -1,0 +1,15 @@
+Namaste {{ customer_name }},
+
+Great news! Your scrap pickup request for Order #{{ order_id }} has been accepted.
+
+Our vendor will reach you at the scheduled time.
+
+Pickup date  : {{ pickup_date }}
+Pickup time  : {{ pickup_time }}
+Pickup person: {{ pickup_person_name }}
+{% if pickup_person_contact %}Contact number: {{ pickup_person_contact }}
+{% endif %}
+Please keep your scrap ready before the scheduled pickup time.
+
+Thank you,
+Team Scrapay

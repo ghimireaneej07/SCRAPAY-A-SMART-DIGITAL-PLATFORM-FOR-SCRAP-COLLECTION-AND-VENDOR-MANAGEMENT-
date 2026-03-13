@@ -1,5 +1,5 @@
-import { FaCalendarAlt, FaClock, FaMapMarkerAlt, FaUser } from 'react-icons/fa';
 import { useEffect, useState } from 'react';
+import { CalendarDays, Clock3, MapPin, UserRound } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { orderService } from '../services/orderService.js';
 
@@ -9,12 +9,22 @@ const VendorOrderDetails = () => {
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
+  const [approvalForm, setApprovalForm] = useState({
+    pickup_person_name: '',
+    pickup_person_contact: '',
+    pickup_datetime: '',
+  });
 
   useEffect(() => {
     const loadOrder = async () => {
       try {
         const data = await orderService.getVendorOrderById(id);
         setSelectedOrder(data);
+        setApprovalForm({
+          pickup_person_name: data.pickup_person_name || '',
+          pickup_person_contact: data.pickup_person_contact || '',
+          pickup_datetime: data.pickup_datetime ? new Date(data.pickup_datetime).toISOString().slice(0, 16) : '',
+        });
       } catch (err) {
         setError(err.message || 'Unable to load order.');
       } finally {
@@ -49,7 +59,19 @@ const VendorOrderDetails = () => {
 
   const handleAction = async (action) => {
     try {
-      const updated = await orderService.vendorAction(selectedOrder.id, action);
+      const payload =
+        action === 'accept'
+          ? {
+              pickup_person_name: approvalForm.pickup_person_name,
+              pickup_person_contact: approvalForm.pickup_person_contact,
+              pickup_datetime: approvalForm.pickup_datetime ? new Date(approvalForm.pickup_datetime).toISOString() : undefined,
+            }
+          : undefined;
+      const updated = await orderService.vendorAction(
+        selectedOrder.id,
+        action,
+        payload,
+      );
       setSelectedOrder(updated);
       if (updated.status === 'rejected' || updated.status === 'completed') {
         navigate('/vendor/dashboard');
@@ -67,14 +89,14 @@ const VendorOrderDetails = () => {
         <div className="grid grid-cols-1 items-center gap-4 text-sm md:grid-cols-3">
           <div className="flex flex-col gap-2">
             <div className="flex items-center gap-2 text-lg font-bold">
-              <FaUser /> {selectedOrder.customer_name}
+              <UserRound className="h-5 w-5" /> {selectedOrder.customer_name}
             </div>
             <div className="w-max rounded bg-white px-3 py-1 text-sm font-medium text-[#8B5E3C]">
               {selectedOrder.items.map((item) => item.category_name).join(', ')}
             </div>
           </div>
           <div className="flex items-start gap-2 text-sm">
-            <FaMapMarkerAlt className="mt-1" />
+            <MapPin className="mt-1 h-4 w-4" />
             <p className="leading-snug">{selectedOrder.address}</p>
           </div>
         </div>
@@ -82,18 +104,58 @@ const VendorOrderDetails = () => {
 
       <div className="flex flex-col items-center gap-6 rounded-xl bg-[#C2976C] p-6 shadow-lg">
         <div className="flex items-center gap-2 rounded-full bg-yellow-100 px-6 py-2 font-medium text-black">
-          <FaCalendarAlt />
+          <CalendarDays className="h-4 w-4" />
           <span>{pickupDate.toLocaleDateString()}</span>
         </div>
 
         <div className="flex items-center gap-2 rounded-full bg-yellow-100 px-6 py-2 font-medium text-black">
-          <FaClock />
+          <Clock3 className="h-4 w-4" />
           <span>{pickupDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+        </div>
+
+        <div className="w-full rounded-xl bg-[#8B5E3C] p-4 text-sm text-orange-50">
+          <p className="font-semibold text-orange-100">Scrap Items</p>
+          <div className="mt-3 grid gap-3 md:grid-cols-2">
+            {selectedOrder.items.map((item) => (
+              <div key={item.id} className="rounded-lg bg-[#A1623C] p-3">
+                <p className="font-semibold">{item.category_name}</p>
+                <p className="mt-1">{item.quantity_kg} kg</p>
+                {item.note && <p className="mt-1 text-orange-100">Note: {item.note}</p>}
+                {item.image_url && <img src={item.image_url} alt={item.category_name} className="mt-3 h-32 w-full rounded-md object-cover" />}
+              </div>
+            ))}
+          </div>
         </div>
 
         <div className="rounded-full bg-[#8B5E3C] px-6 py-2 text-sm font-semibold uppercase tracking-wide text-orange-100">
           Status: {selectedOrder.status}
         </div>
+
+        {selectedOrder.status === 'pending' && (
+          <div className="w-full rounded-xl bg-[#8B5E3C] p-4 text-sm text-orange-50">
+            <p className="font-semibold text-orange-100">Pickup Approval Details</p>
+            <div className="mt-3 grid gap-3 md:grid-cols-3">
+              <input
+                className="rounded-md bg-yellow-100 px-3 py-2 text-black"
+                placeholder="Pickup person name"
+                value={approvalForm.pickup_person_name}
+                onChange={(event) => setApprovalForm((prev) => ({ ...prev, pickup_person_name: event.target.value }))}
+              />
+              <input
+                className="rounded-md bg-yellow-100 px-3 py-2 text-black"
+                placeholder="Contact number"
+                value={approvalForm.pickup_person_contact}
+                onChange={(event) => setApprovalForm((prev) => ({ ...prev, pickup_person_contact: event.target.value }))}
+              />
+              <input
+                type="datetime-local"
+                className="rounded-md bg-yellow-100 px-3 py-2 text-black"
+                value={approvalForm.pickup_datetime}
+                onChange={(event) => setApprovalForm((prev) => ({ ...prev, pickup_datetime: event.target.value }))}
+              />
+            </div>
+          </div>
+        )}
 
         <div className="mt-6 flex gap-6">
           {selectedOrder.status === 'pending' && (

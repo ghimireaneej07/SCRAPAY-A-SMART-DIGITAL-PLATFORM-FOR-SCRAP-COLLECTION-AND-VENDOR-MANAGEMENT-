@@ -66,11 +66,11 @@ const SellScrap = () => {
       return;
     }
 
-    const items = selectedCategories.map((category) => ({
+    const items = selectedCategories.map((category, index) => ({
       category_id: category.id,
       quantity_kg: Number(formData[category.id].quantity),
       note: formData[category.id].note,
-      image_url: '',
+      image_key: formData[category.id].image ? `item_image_${index}` : '',
     }));
 
     const hasInvalidQuantity = items.some((item) => !Number.isFinite(item.quantity_kg) || item.quantity_kg <= 0);
@@ -81,13 +81,19 @@ const SellScrap = () => {
 
     try {
       setSubmitting(true);
-      const order = await orderService.createOrder({
-        vendor: selectedVendor.id,
-        pickup_datetime: buildPickupDatetime(pickupDate, pickupTime),
-        address: pickupAddress.trim(),
-        customer_note: '',
-        items,
+      const requestBody = new FormData();
+      requestBody.append('vendor', String(selectedVendor.id));
+      requestBody.append('pickup_datetime', buildPickupDatetime(pickupDate, pickupTime));
+      requestBody.append('address', pickupAddress.trim());
+      requestBody.append('customer_note', '');
+      requestBody.append('items', JSON.stringify(items));
+      selectedCategories.forEach((category, index) => {
+        const file = formData[category.id]?.image;
+        if (file) {
+          requestBody.append(`item_image_${index}`, file);
+        }
       });
+      const order = await orderService.createOrder(requestBody);
       resetSellFlow();
       navigate(`/order/${order.id}`);
     } catch (err) {
@@ -145,6 +151,7 @@ const SellScrap = () => {
                   <th className="px-4 py-3">Pickup Date</th>
                   <th className="px-4 py-3">Pickup Time</th>
                   <th className="px-4 py-3">Note</th>
+                  <th className="px-4 py-3">Scrap Photo</th>
                 </tr>
               </thead>
               <tbody>
@@ -184,6 +191,14 @@ const SellScrap = () => {
                         rows="1"
                         value={formData[category.id]?.note || ''}
                         onChange={(event) => handleChange(category.id, 'note', event.target.value)}
+                        className="w-full rounded bg-yellow-100 px-2 py-1 text-black"
+                      />
+                    </td>
+                    <td className="px-2 py-2">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(event) => handleChange(category.id, 'image', event.target.files?.[0] || null)}
                         className="w-full rounded bg-yellow-100 px-2 py-1 text-black"
                       />
                     </td>

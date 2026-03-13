@@ -1,3 +1,4 @@
+import AdminCollectionPage from '../pages/AdminCollectionPage';
 import About from '../pages/About';
 import AdminPanel from '../pages/AdminPanel';
 import CompletedOrders from '../pages/CompletedOrders';
@@ -36,6 +37,8 @@ export const protectedRoutes = [
   { path: '/vendor/order-details/:id', element: <VendorOrderDetails />, roles: ['vendor'] },
   { path: '/vendor/completed-orders', element: <CompletedOrders />, roles: ['vendor'] },
   { path: '/admin', element: <AdminPanel />, roles: ['admin'] },
+  { path: '/admin/vendors', element: <AdminCollectionPage mode="vendors" />, roles: ['admin'] },
+  { path: '/admin/users', element: <AdminCollectionPage mode="users" />, roles: ['admin'] },
 ];
 
 export const fallbackRoute = { path: '*', element: <NotFound /> };

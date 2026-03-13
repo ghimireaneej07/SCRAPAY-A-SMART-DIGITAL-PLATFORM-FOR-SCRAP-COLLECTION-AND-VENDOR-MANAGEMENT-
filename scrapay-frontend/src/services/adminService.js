@@ -17,10 +17,14 @@ export const adminService = {
     return apiRequest('/auth/admin/vendors');
   },
 
-  setVendorVerification(vendorId, isVerified) {
+  setVendorVerification(vendorId, isVerified, rejectionReason = '') {
+    const body = { is_verified: isVerified };
+    if (!isVerified && rejectionReason) {
+      body.rejection_reason = rejectionReason;
+    }
     return apiRequest(`/auth/admin/vendors/${vendorId}/verify`, {
       method: 'PATCH',
-      body: JSON.stringify({ is_verified: isVerified }),
+      body: JSON.stringify(body),
     });
   },
 

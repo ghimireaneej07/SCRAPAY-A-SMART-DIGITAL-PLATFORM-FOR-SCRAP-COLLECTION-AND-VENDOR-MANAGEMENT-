@@ -5,11 +5,13 @@ export const authService = {
     const payload = await apiRequest('/auth/login', {
       method: 'POST',
       body: JSON.stringify({
-        username: credentials.username,
+        identifier: credentials.identifier,
         password: credentials.password,
       }),
     });
-    tokenStore.set({ access: payload.access, refresh: payload.refresh });
+    if (payload.access && payload.refresh) {
+      tokenStore.set({ access: payload.access, refresh: payload.refresh });
+    }
     return payload;
   },
 
@@ -24,6 +26,29 @@ export const authService = {
     return apiRequest('/auth/register/vendor', {
       method: 'POST',
       body: JSON.stringify(form),
+    });
+  },
+
+  async requestOtp(payload) {
+    return apiRequest('/auth/otp/request', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  async verifyOtp(payload) {
+    const response = await apiRequest('/auth/otp/verify', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+    tokenStore.set({ access: response.access, refresh: response.refresh });
+    return response;
+  },
+
+  async resetPassword(payload) {
+    return apiRequest('/auth/password/reset', {
+      method: 'POST',
+      body: JSON.stringify(payload),
     });
   },
 

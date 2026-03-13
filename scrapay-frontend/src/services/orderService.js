@@ -32,9 +32,10 @@ export const orderService = {
   },
 
   createOrder(payload) {
+    const body = payload instanceof FormData ? payload : JSON.stringify(payload);
     return apiRequest('/orders/my/', {
       method: 'POST',
-      body: JSON.stringify(payload),
+      body,
     });
   },
 
@@ -47,9 +48,10 @@ export const orderService = {
     return apiRequest(`/orders/vendor/${orderId}/`);
   },
 
-  vendorAction(orderId, action) {
+  vendorAction(orderId, action, payload) {
     return apiRequest(`/orders/vendor/${orderId}/${action}/`, {
       method: 'PATCH',
+      body: payload ? JSON.stringify(payload) : undefined,
     });
   },
 

@@ -1,7 +1,21 @@
-import { FaFacebookF, FaTwitter, FaInstagram, FaLinkedin } from 'react-icons/fa';
+import { Facebook, Instagram, Linkedin, Twitter } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../hooks/useAuth.js';
 
 const Footer = () => {
+  const { user, isAuthenticated } = useAuth();
+
+  const dashboardLink =
+    user?.role === 'vendor'
+      ? '/vendor/dashboard'
+      : user?.role === 'admin'
+        ? '/admin'
+        : '/user/dashboard';
+
+  const accountLink = isAuthenticated
+    ? { to: dashboardLink, label: 'Dashboard' }
+    : { to: '/login', label: 'Login' };
+
   return (
     <footer className="bg-[#2c1b12] text-gray-300 py-10">
       <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-10">
@@ -21,7 +35,7 @@ const Footer = () => {
             <li><Link to="/" className="hover:text-white">Home</Link></li>
             <li><Link to="/about" className="hover:text-white">About</Link></li>
             <li><Link to="/about" className="hover:text-white">Contact</Link></li>
-            <li><Link to="/login" className="hover:text-white">Login</Link></li>
+            <li><Link to={accountLink.to} className="hover:text-white">{accountLink.label}</Link></li>
           </ul>
         </div>
 
@@ -39,10 +53,10 @@ const Footer = () => {
         <div>
           <h4 className="text-md font-semibold text-orange-300 mb-2">Follow Us</h4>
           <div className="flex space-x-4 text-lg">
-            <a href="#" className="hover:text-white"><FaFacebookF /></a>
-            <a href="#" className="hover:text-white"><FaTwitter /></a>
-            <a href="#" className="hover:text-white"><FaInstagram /></a>
-            <a href="#" className="hover:text-white"><FaLinkedin /></a>
+            <a href="#" className="hover:text-white"><Facebook className="h-4 w-4" /></a>
+            <a href="#" className="hover:text-white"><Twitter className="h-4 w-4" /></a>
+            <a href="#" className="hover:text-white"><Instagram className="h-4 w-4" /></a>
+            <a href="#" className="hover:text-white"><Linkedin className="h-4 w-4" /></a>
           </div>
         </div>
       </div>
